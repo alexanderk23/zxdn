@@ -1,0 +1,428 @@
+Из журнала ZX Format #5,
+Санкт-Петербург, 12.12.1996
+
+
+
+        AUTOconfig v5.03
+
+(C) CREATOR CODE
+________________________________
+
+          "... И ТОГО И ДРУГОГО,
+              И МОЖНО БЕЗ ХЛЕБА
+                       (В.ПУХ)
+
+ Данная процедура при её запуске
+определяет  тип компютера, и со-
+ответственно объём памяти.
+ Определяются :
+
+Sinclair 48/128/512k
+TURBO 2+ 128/1024k v6.00-v7.1
+ATM turbo 1 128/512k v4.10-v5.20
+Scorpion 128/512k
+PROFI 128/1024k
+
+ После  определения типа начина-
+ется  определение объёма свобод-
+ной  памяти.  Результаты  данных
+изысканий заносятся в переменные
+ TYPE- тип компютера.
+ PAGE  -  количество  листаемых
+страниц.
+
+ Переключение  страниц  по физи-
+ческому номеру - процедура
+ EX_RAM  по логическому - ONPAGE
+номер  страницы  в аккумуляторе.
+пример:
+      ...
+       LD A,8 ;ВОСЬМАЯ СТРАНИЦА
+       CALL EX_RAM
+      ...
+ Подключить  восьмую  старницу в
+разъём.  В  данном примере будет
+подключена    реальная   восьмая
+страница.
+      ...
+       LD A,8
+       CALL ONPAGE
+      ...
+ В  этом  примере в разъём будет
+подключена  восьмая  по  счёту в
+таблице  присутствующих страниц.
+( с начала  там  исключены 2 и 5
+страницы).
+
+
+
+ Если нужно исключить из оборота
+какие-то  страницы (как например
+в  SCORPION 8 страница) то в ак-
+кумуляторе номер удаляемой стра-
+ницы и вызвать процедуру
+ DEBUG,пример:
+       ...
+        LD A,8
+        CALL DEBUG
+       ...
+ Исключить страницу 8 из обраще-
+ния.
+
+
+ распределение  битов  в  ячейке
+TYPE :
+
+ 0- SPECTRUM 128K порт #7FFD
+ 1- SCORPION/KAY порт #1FFD
+ 2- PROFI порт #FDFD
+ 3- TURBO 2+ порт #FFF7
+ 4- ATM-TURBO порт #FDFD
+ 5- SPECTRUM 256/512K
+ 6-
+ 7- по адресу 8,#C3 (SCORPION)
+
+ Естественно тип компютера опре-
+деляется несколькоми битами.
+  Например при определении TURBO
+2+ в ячейке TYPE будет - 9 (най-
+дены  #7FFD и #FFF7),если проце-
+дура запушена из 128кб и 8 - ес-
+ли процедура запущена из 48кб.
+
+(C) CREATOR CODE 1996 MCMXCVI
+ ZF>  ентот прог тоже в приложе-
+нии, в виде TASM4'го исходника.
+
+________________________________
+
+
+
+
+        ORG  25000
+START
+        XOR  A
+        LD   (TYPE),A
+        INC  A
+        LD   (PAGE),A
+        DI
+
+        LD   A,(#08)
+        CP   #C3
+        JR   NZ,ITURBO
+
+        LD   HL,TYPE
+        SET  7,(HL)
+
+ITURBO
+
+        LD   HL,(1111)
+
+        LD   BC,#FFF7
+        LD   A,%00011111
+        CALL OUTC_A
+
+        LD   DE,(#C000+1111)
+        AND  A
+        SBC  HL,DE
+
+        LD   BC,#FFF7
+        LD   A,255
+        CALL OUTC_A
+        JR   NZ,IDFFD
+
+        LD   HL,TYPE
+        SET  3,(HL)
+
+        JR   I7FFD
+
+MM_ATM  DEFB #DB,#1F,#C9
+
+IDFFD   LD   HL,#80
+        LD   DE,#1000
+        LD   BC,#DFFD
+
+        OUT  (C),D
+        NOP
+        LD   A,(HL)
+        INC  (HL)
+        CP   (HL)
+        LD   (HL),A
+        OUT  (C),E
+        NOP
+        JR   Z,I1FFD
+
+        LD   HL,TYPE
+        SET  2,(HL)
+
+        OUT  (C),D
+        NOP
+        LD   B,#7F
+        OUT  (C),D
+        NOP
+        LD   B,#DF
+        OUT  (C),E
+        NOP
+
+        JR   I7FFD
+
+I1FFD   LD   DE,#1110
+        LD   B,#1F
+        OUT  (C),D
+        NOP
+        LD   A,(HL)
+        INC  (HL)
+        CP   (HL)
+        LD   (HL),A
+        OUT  (C),E
+        NOP
+        JR   Z,IFDFD
+
+        XOR  A
+        OUT  (C),A
+        LD   HL,TYPE
+        SET  1,(HL)
+        JP   I7FFD
+IFDFD
+        LD   B,C
+        LD   HL,#FFFF
+        OUT  (C),D
+        NOP
+        LD   B,#7F
+        OUT  (C),D
+        NOP
+        LD   (HL),D
+        LD   B,C
+        OUT  (C),E
+        NOP
+        LD   B,#7F
+        OUT  (C),D
+        NOP
+        LD   (HL),E
+
+        LD   B,C
+        OUT  (C),D
+        NOP
+        LD   B,#7F
+        OUT  (C),D
+        NOP
+        LD   A,(HL)
+        CP   D
+        JR   NZ,I7FFD
+
+        LD   HL,TYPE
+        SET  4,(HL)
+
+I7FFD   LD   HL,#80
+        LD   DE,#1000
+        LD   BC,#7FFD
+        OUT  (C),D
+        NOP
+        LD   A,(HL)
+        OUT  (C),E
+        NOP
+        CP   (HL)
+        OUT  (C),D
+        NOP
+        JR   Z,SIZED
+
+        LD   HL,TYPE
+        SET  0,(HL)
+
+SIZED
+        CALL VIRT
+
+        LD   A,(PAGE)
+        CP   8
+        JR   C,ENDING
+        LD   A,(TYPE)
+        CP   1
+        JR   NZ,ENDING
+        LD   HL,TYPE
+        SET  5,(HL)
+ENDING
+        LD A,0
+        CALL EX_RAM
+        EI
+        RET
+
+VIRT    LD   IX,#C000
+
+        LD   HL,DOOM+63
+        LD   B,64
+V_R11   LD   A,B
+        DEC  A
+        CALL EX_RAM
+        LD   C,(IX+0)
+        LD   (HL),C
+        LD   (IX+0),A
+        DEC  HL
+        DJNZ V_R11
+
+        PUSH AF
+        LD   A,61
+        LD   (PAGE),A
+        POP  AF
+        LD   DE,TABL_PG
+V_R20   LD   A,(DE)
+        CP   #FF
+        JR   Z,V_R30
+        CALL EX_RAM
+        CP   (IX+0)
+        JR   Z,V_R22
+
+        PUSH DE
+        LD   HL,TABL_PG+62
+        AND  A
+        SBC  HL,DE
+        PUSH HL
+        POP  BC
+        PUSH DE
+        POP  HL
+        INC  HL
+        LDIR
+
+        PUSH HL
+        LD   HL,PAGE
+        DEC  (HL)
+        POP  HL,DE
+        DEC  DE
+V_R22   INC  DE
+        JR   V_R20
+
+V_R30   LD   B,64
+        LD   HL,DOOM
+V_R31   LD   A,64
+        SUB  B
+        CALL EX_RAM
+        LD   A,(HL)
+        LD   (IX+0),A
+        INC  HL
+        DJNZ V_R31
+        RET
+
+DEBUG   PUSH DE
+        POP  HL
+NO_PG1  DEC  DE
+        LD   A,(DE)
+        CP   #FF
+        JR   Z,NO_PG2
+        CP   C
+        JR   NZ,NO_PG1
+
+        SBC  HL,DE
+        PUSH HL
+        POP  BC
+        PUSH DE
+        POP  HL
+        INC  HL
+        LDIR
+        PUSH HL
+        LD   HL,PAGE
+        DEC  (HL)
+        POP  HL
+        DEC  HL
+        DEC  HL
+NO_PG2  EX   DE,HL
+        RET
+
+ONPAGE
+        PUSH BC
+        PUSH HL
+        LD   C,A
+        LD   B,0
+        LD   HL,TABL_PG
+        ADD  HL,BC
+        LD   A,(HL)
+        POP  HL,BC
+EX_RAM            DI
+        PUSH HL,AF,BC
+        LD   HL,TYPE
+        BIT  1,(HL)
+        JR   NZ,ZS256
+        BIT  2,(HL)
+        JR   NZ,PROFI
+        BIT  3,(HL)
+        JR   NZ,TURBO_2
+        BIT  4,(HL)
+        JR   NZ,ATM1
+        BIT  0,(HL)
+        JR   NZ,SPECCY
+        BIT  7,(HL)
+        JR   NZ,SPECCY
+        JR   TDK
+
+TURBO_2 PUSH AF,IX
+
+        AND  24
+        CPL
+        LD   BC,#FFF7
+        CALL OUTC_A
+        POP  IX,AF
+        JP   SPECCY
+
+ATM1    LD   BC,#FDFD
+        PUSH AF
+        RRCA
+        RRCA
+        RRCA
+        AND  3
+        JR   HOME
+
+PROFI   LD   BC,#DFFD
+        PUSH AF
+        RRCA
+        RRCA
+        RRCA
+        AND  7
+        JR   HOME
+
+ZS256   PUSH AF
+        LD   B,A
+        AND  %00001000
+        RLCA
+        LD   C,A
+        LD   A,B
+        AND  %00110000
+        RLCA
+        RLCA
+        ADD  A,C
+        LD   BC,#1FFD
+HOME    OUT  (C),A
+        NOP
+        POP  AF
+
+SPECCY  LD   B,A
+        AND  24
+        RLCA
+        RLCA
+        RLCA
+        LD   C,A
+        LD   A,B
+        AND  7
+        ADD  A,C
+        OR   16
+        LD   BC,#7FFD
+        OUT  (C),A
+        NOP
+TDK     LD   (23388),A
+        POP  BC,AF,HL
+        RET
+
+OUTC_A  LD   IX,10835
+        PUSH IX
+        JP   15663
+
+        DB   #FF
+TABL_PG DB   00,01,03,04,06,07
+        DB   08,09,10,11,12,13,14,15
+        DB   16,17,18,19,20,21,22,23
+        DB   24,25,26,27,28,29,30,31
+        DB   32,33,34,35,36,37,38,39
+        DB   40,41,42,43,44,45,46,47
+        DB   48,49,50,51,52,53,54,55
+        DB   56,57,58,59,60,61,62,63
+        DB   #FF
+DOOM    DB   64,0
+TYPE    DB   0
+PAGE    DB   0

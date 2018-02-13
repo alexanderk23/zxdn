@@ -1,0 +1,894 @@
+Из журнала Deja Vu #05, Кемерово, 01.07.98
+
+
+
+(C) Card!nal/PGC/BD
+__________________________________________
+
+   Привет,дорогие читатели нашего журнала!
+Даниил  тут попросил  меня написать статью
+по coding'у, и я вот сижу за текстовым ре-
+дактором. Эта статья не имеет определенной
+цели, просто я расскажу об оптимизации  и,
+вообще, что у меня  накопилось  с  выпуска
+четвертого номера Deja Vu.
+
+   Для  начала поговорим о выводе спрайтов
+без атрибутов. Вот стандартная процедура:
+
+        LD HL,adr    ;адрес спрайта
+        LD DE,#4000  ;адрес в экране
+        LD B,192     ;высота в пикселях
+        LD C,32      ;ширина в знакоместах
+LOOP2   PUSH DE
+        PUSH BC
+        LD B,0
+        LDIR
+        POP BC
+        POP DE
+        INC D
+        LD A,D
+        AND 7
+        JP NZ,METKA1
+        LD A,E
+        ADD A,32
+        LD E,A
+        JP C,METKA1
+        LD A,D
+        SUB 8
+        LD D,A
+METKA1  DJNZ LOOP2
+        RET
+
+   А  теперь  давайте  посчитаем,  сколько
+тактов  она работает. Не углубляясь в под-
+робности,  как  я это посчитал, скажу, что
+она работает около 146000 тактов при выво-
+де  спрайта  размером  с  экран. В среднем
+тратится 23.7 тактов за байт. Вообщем, это
+неплохая процедура вывода статических кар-
+тинок,  ну, а если вам нужна быстрая, УНИ-
+ВЕРСАЛЬНАЯ  процедура, тогда смотрите ниж-
+ний  листинг. Под  словом  универсальная я
+подразумевал, что можно  произвольно зада-
+вать  высоту, ширину спрайта и его коорди-
+наты на экране.
+
+        CALL DECRUN ;эта программа делает
+                    ;таблицу адресов
+                    ;экрана
+
+        LD HL,adr  ;адрес спрайта
+        LD D,3     ;коорд. X в знакоместах
+        LD E,8     ;коорд. Y в пикселях
+        LD B,100   ;высота в пикселях
+        LD C,20    ;ширина в знакоместах
+
+WIWOD   DI
+        LD A,D
+        LD (WIW1+1),A
+        LD A,C
+        ADD A,A
+        SUB 64
+        NEG
+        LD C,A
+        LD A,B
+        LD B,0
+        LD IX,WIW2
+        ADD IX,BC
+        EX DE,HL
+        LD H,B
+        ADD HL,HL
+        LD BC,BUFER
+        ADD HL,BC
+        LD (STACK+1),SP
+        LD SP,HL
+        EX DE,HL
+        LD B,A
+LOOP1   POP DE
+        LD A,E
+WIW1    ADD A,0
+        LD E,A
+        LD C,D
+        JP (IX)
+WIW2
+        DUP 32
+        LDI      ;команда LDI повторяется
+        EDUP     ;32 раза
+
+        DJNZ LOOP1
+STACK   LD SP,0
+        EI
+        RET
+
+DECRUN  LD HL,BUFER
+        LD DE,#4000
+        LD B,192
+LOOP    LD (HL),E
+        INC HL
+        LD (HL),D
+        INC HL
+        INC D
+        LD A,D
+        AND 7
+        JR NZ,METKA
+        LD A,E
+        ADD A,32
+        LD E,A
+        JR C,METKA
+        LD A,D
+        SUB 8
+        LD D,A
+METKA   DJNZ LOOP
+        RET
+BUFER   DEFS 384
+
+   Процедура  работает  108076  тактов при
+выводе  спрайта  величиной  с экран, что в
+1.35  раза  быстрее  предыдущей. В среднем
+тратится 17.6 тактов за байт. Подпрограмма
+DECRUN запускается только один раз,а даль-
+ше можно пользоваться подпрограммой  WIWOD
+сколько угодно. Скажу только,что нужно за-
+прещать прерывания, так как юзается  стек.
+Постарайтесь сами разобраться, как все ра-
+ботает. Я только подскажу зачем нужна  ко-
+манда LD C,D перед  командой  JP (IX). Как
+известно, LDI при работе уменьшает регист-
+ровую пару BC, так вот, чтобы не  портился
+регистр B, нам нужно постоянно  держать  в
+регистре C число больше, чем  максимальная
+ширина спрайта,то есть больше 32,а регистр
+D всегда содержит число больше 32.
+
+   Ну все, с выводом спрайтов разобрались,
+поговорим о повороте спрайта на любой угол
+(0  - 360). В четвертом Deja Vu был исход-
+ник  Колотова "TURN SPRITES". Честно гово-
+ря, я  видел  эту  программку еще раньше и
+скажу, что  качество работы программы меня
+не  очень-то  обрадовало :-(. Я попробовал
+повернуть залитый квадрат 5 на 5 знакомест
+на 45 градусов и увидел неприятную картин-
+ку, квадрат уже был похож не на квадрат, а
+на квадратное решето, и использовать такую
+программу  было затруднительно. А все дело
+в  алгоритме  поворота и не учета строения
+экрана. Я  реализовал несколько другой ал-
+горитм  и  результат  просто  потрясающий.
+Картинка почти (учитывая низкое разрешение
+экрана)  не искажается. Если вы, например,
+повернете  залитый  круг радиусом 50 на 45
+градусов  вокруг  его  центра, то получите
+такой  же  круг. Правда этот алгоритм не я
+придумал, а взял его из журнала ZX NEWS 3.
+Там  была  статейка о повороте спрайтов, и
+была дана программа на бейсике. Программка
+эта  работала более часа, поворачивая весь
+экран. Аналога  в  кодах этой программы не
+было, а  автор  сознался, что не дружит со
+встроенным  калькулятором  бейсика. Честно
+говоря, я  тоже  не  дружу  со  встроенным
+калькулятором, а  потому реализовал данный
+алгоритм в кодах без использования кальку-
+лятора. Первая версия моей программы рабо-
+тала  3.5 минут, поворачивая весь экран не
+важно на какой угол. Я решил, что это пол-
+ный  SUXX  и чуть-чуть оптимизировал ее. В
+итоге получилось около 40 секунд, что при-
+мерно  в 5 раз быстрее первоначального ва-
+рианта и в 100 раз быстрее чем на бейсике,
+и это,заметьте,без потери качества изобра-
+жения. Дальше оптимизировать было лень,хо-
+тя была перспектива довести время до 10-15
+секунд, а то и быстрее, но эту  радость  я
+могу предоставить вам, SERZH, ты меня  по-
+нял  :-). В приложении найдете исходник  в
+формате ALASM 3.8c. Исходник содержит  ко-
+ментарии, так что разберетесь. Не смотрите
+на убогий код,некогда было его вылизывать.
+Началом координат считается  левый  нижний
+угол экрана, если я не ошибаюсь. Поворачи-
+ваемый спрайт (не дай себе засохнуть!)дол-
+жен уже быть на экране. Программа  исполь-
+зует приличный объем  памяти ( 6144 + при-
+мерно 2кг ) байт для буфера,там увидите...
+Чуть не забыл рассказать алгоритм  поворо-
+та. Берется точка с координатами  (x0,y0),
+поворачивается на угол и получается  коор-
+дината (x1,y1), из координаты (x1,y1)  бе-
+рется точка (если она есть) и  переносится
+в координату (x0,y0), потом берется  след.
+(x0,y0) и т.д. Проверки выхода за  пределы
+экрана, OF COZZZ, делаются,так что все на-
+мана :-).
+
+
+
+
+;==============================================================
+;| TURN SPRITES 2                                             |-
+;|                                                            |-
+;| CODING BY CARDINAL/PGC/BD          DATE:19.04.1998         |-
+;|                                                            |-
+;| ПРОГРАММА РАБОТАЕТ ПРИМЕРНО 44 СЕКУНДЫ ПРИ ПОВОРОТЕ ВСЕГО  |-
+;| ЭКРАНА БЕЗ ТУРБО-РЕЖИМА.                                   |-
+;| ПРОГРАММЕ ТРЕБУЕТСЯ БУФЕР НА 6144 БАЙТА (МЕТКА SCRBUF)     |-
+;==============================================================-
+; --------------------------------------------------------------
+
+        ORG #6000
+        DI
+
+        LD HL,45        ;ALPHA
+        LD (M_A),HL
+        LD A,127        ;CRD X  ;ВОКРУГ КАКИХ КООРДИНАТ КРУТИТЬ
+        LD (M_X),A              ;
+        LD A,95         ;CRD Y  ;
+        LD (M_Y),A
+        LD HL,255       ;ШИРИНА - 1
+        LD (M_J),HL
+        LD HL,191       ;ВЫСОТА - 1
+        LD (M_I),HL
+
+;НАЧАЛОМ КООРДИНАТ СЧИТАЕТСЯ ВЕРХНИЙ ЛЕВЫЙ УГОЛ ЭКРАНА.
+
+        CALL SET_TBL
+        LD HL,SCRBUF    ;ОЧИЩАЕМ БУФЕР
+        LD DE,SCRBUF+1
+        LD BC,6143
+        LD (HL),0
+        LDIR
+        CALL ROTATOR
+        LD HL,SCRBUF    ;ВЫВОДИМ ПОВЕРНУТУЮ КАРТИНКУ
+        LD DE,#4000
+        LD BC,6144
+        LDIR
+        LD HL,#2758
+        EXX
+        RET
+
+ROTATOR LD HL,0
+        LD (M_J_),HL
+        LD (M_I_),HL
+
+        LD HL,(M_A)     ;ЕСЛИ ХОТИТЕ ВРАЩАТЬ КАРТИНКУ ПО
+                        ;ЧАСОВОЙ СТРЕЛКЕ, ТО ВОССТАНОВИТЕ
+                        ;СТРОКИ, ПОМЕЧЕННЫЕ ЗВЕЗДОЧКОЙ '*'
+
+;       LD DE,360       ;*
+;       EX DE,HL        ;*
+;       OR A            ;*
+;       SBC HL,DE       ;*
+
+        EX DE,HL
+        PUSH DE
+        CALL COS
+        LD HL,M_C
+        LD (HL),A
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        POP DE
+        CALL SIN
+        LD HL,M_S
+        LD (HL),A
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+
+        CALL DEJA
+        CALL RULEZ
+        CALL AMIGA
+        RET
+
+AMIGA   LD HL,BUF1      ;ЭТА ПОДПРОГРАММА БЕРЕТ ДАННЫЕ ИЗ
+        LD (AMMY1+1),HL ;ТАБЛИЦЫ, ВЫЧИСЛЯЕТ НОВЫЕ КООРДИНАТЫ
+        LD HL,BUF4      ;КАЖДОЙ ТОЧКИ ЭКРАНА И ВЫЗЫВАЕТ
+        LD (AMMY2+1),HL ;ПОДПРОГРАММУ PIXEL
+        LD HL,BUF2
+        LD (AMMY3+1),HL
+        LD HL,BUF3
+        LD (AMMY4+1),HL
+
+AMMY1   LD HL,BUF1      ;ВЫЧИСЛЯЕТ КООРДИНАТУ OX
+        LD DE,M_PRO1
+        EXX
+AMMY2   LD HL,BUF4
+        LD DE,M_PRO2
+        EXX
+        CALL AMIGA1
+        LD A,(DE)
+        CPL
+        LD (DE),A
+        LD IX,M_X
+        CALL AMIGA2
+
+AMMY3   LD HL,BUF2      ;ВЫЧИСЛЯЕТ КООРДИНАТУ OY
+        LD DE,M_PRO3
+        EXX
+AMMY4   LD HL,BUF3
+        LD DE,M_PRO4
+        EXX
+        CALL AMIGA1
+        LD IX,M_Y
+        CALL AMIGA2
+
+        CALL PIXEL
+
+        LD HL,(AMMY1+1)
+        LD BC,4
+        ADD HL,BC
+        LD (AMMY1+1),HL
+        LD HL,(AMMY3+1)
+        ADD HL,BC
+        LD (AMMY3+1),HL
+
+        CALL LOOP_J
+        JP NC,AMMY1
+
+        LD HL,BUF1
+        LD (AMMY1+1),HL
+        LD HL,BUF2
+        LD (AMMY3+1),HL
+
+        LD HL,(AMMY2+1)
+        LD BC,4
+        ADD HL,BC
+        LD (AMMY2+1),HL
+        LD HL,(AMMY4+1)
+        ADD HL,BC
+        LD (AMMY4+1),HL
+
+        CALL LOOP_I
+        JP NC,AMMY1
+        RET
+
+AMIGA1  PUSH DE
+        LDI
+        LDI
+        LDI
+        LDI
+        EXX
+        PUSH DE
+        LDI
+        LDI
+        LDI
+        LDI
+        EXX
+        POP DE
+        POP HL
+        RET
+
+AMIGA2  LD B,H
+        LD C,L
+        PUSH HL
+        PUSH DE
+        CALL MATIKA
+        INC BC
+        LD H,B
+        LD L,C
+        CALL DELEN
+        POP HL
+        PUSH HL
+        XOR A
+        LD (HL),A
+        INC HL
+        LD (HL),A
+        INC HL
+        LD (HL),A
+        INC HL
+        LD A,(IX)
+        LD (HL),A
+        POP DE
+        POP HL
+        LD B,H
+        LD C,L
+        CALL MATIKA
+        RET
+
+RULEZ   LD HL,BUF1      ;СТРОИТ ДЛИННУЮ ТАБЛИЦУ ВЫЧИСЛЕННЫХ
+        LD BC,M_C       ;ЗНАЧЕНИЙ ПО ФОРМУЛЕ  COS*NX
+        LD IX,RULEZ
+        CALL _RULEZ
+
+RULEZ1  LD HL,BUF2      ;SIN*NX ; NX = J-X
+        LD BC,M_S
+        LD IX,RULEZ1
+        CALL _RULEZ
+
+        CALL LOOP_J
+        JP NC,RULEZ
+
+RULEZ2  LD HL,BUF3      ;COS*NY ; NY = I-Y
+        LD BC,M_C
+        LD IX,RULEZ2
+        CALL _RULEZ
+
+RULEZ3  LD HL,BUF4      ;SIN*NY
+        LD BC,M_S
+        LD IX,RULEZ3
+        CALL _RULEZ
+
+        CALL LOOP_I
+        JP NC,RULEZ2
+        RET
+
+_RULEZ  LD A,(BC)
+        INC BC
+        XOR (HL)
+        LD (HL),A
+        INC HL
+        PUSH HL
+        INC HL
+        LD D,(HL)
+        INC HL
+        LD E,(HL)
+        INC HL
+        LD (IX+1),L
+        LD (IX+2),H
+        LD A,(BC)
+        LD L,A
+        INC BC
+        LD A,(BC)
+        LD H,A
+        LD C,0
+        CALL MULTI
+        POP DE
+        LD HL,OTBET
+        LDI
+        LDI
+        LDI
+        RET
+
+DEJA    LD DE,BUF1      ;СТРОИТ ТАБЛИЧКУ  NX = J-X
+        LD HL,(M_J_)
+        LD A,(M_X)
+        CALL DEJA_VU
+        LD (DEJA+1),HL
+
+        CALL LOOP_J
+        JP NC,DEJA
+
+DEJA2   LD DE,BUF3      ;NY = I-Y
+        LD HL,(M_I_)
+        LD A,(M_Y)
+        CALL DEJA_VU
+        LD (DEJA2+1),HL
+
+        CALL LOOP_I
+        JP NC,DEJA2
+
+        LD HL,BUF1
+        LD DE,BUF2
+        LD BC,1024
+        LDIR
+        EX DE,HL
+        LD DE,BUF4
+        LD B,3
+        LDIR
+        RET
+
+DEJA_VU LD C,A
+        XOR A
+        LD B,A
+        SBC HL,BC
+        JP NC,DEJA1
+        LD A,#FF
+        CALL _NEGHL
+DEJA1   EX DE,HL
+        LD (HL),A
+        INC HL
+        LD (HL),B
+        INC HL
+        LD (HL),D
+        INC HL
+        LD (HL),E
+        INC HL
+        RET
+
+LOOP_J  LD BC,(M_J_)
+        INC BC
+        LD (M_J_),BC
+        LD HL,(M_J)
+        OR A
+        SBC HL,BC
+        RET NC
+        INC HL
+        LD (M_J_),HL
+        RET
+
+LOOP_I  LD BC,(M_I_)
+        INC BC
+        LD (M_I_),BC
+        LD HL,(M_I)
+        OR A
+        SBC HL,BC
+        RET NC
+        INC HL
+        LD (M_I_),HL
+        RET
+
+PIXEL   LD A,(M_PRO1)   ;НЕ ВЫХОДИМ ЛИ МЫ ЗА ПРЕДЕЛЫ ЭКРАНА
+        OR A
+        RET NZ
+        LD A,(M_PRO3)
+        OR A
+        RET NZ
+        LD A,(M_PRO1+2)
+        OR A
+        RET NZ
+        LD HL,M_PRO3+2
+        LD D,(HL)
+        INC HL
+        LD E,(HL)
+        LD HL,191
+        OR A
+        SBC HL,DE
+        RET C
+
+SETPIX  LD A,(M_PRO1+3)         ;ПРОВЕРЯЕМ ЗАСВЕЧЕНА ЛИ ТОЧКА
+        LD E,A          ;X      ;НА ЭКРАНЕ
+        LD A,(M_PRO3+3)
+        LD D,A          ;Y
+
+        LD H,'SCR_TBL
+        LD L,E
+        LD C,(HL)
+        INC H
+        LD A,(HL)
+        INC H
+        LD L,D
+        OR (HL)
+        INC H
+        LD H,(HL)
+        LD L,A
+        LD A,(HL)
+        AND C
+        RET Z           ;НЕ ЗАСВЕЧЕНА, ВЫХОДИМ
+
+        LD A,(M_J_)     ;БЕРЕМ КООРДИНАТЫ I,J
+        LD E,A
+        LD A,(M_I_)
+        LD D,A
+
+        LD H,'SCR_TBL
+        LD L,E
+        LD C,(HL)
+        INC H
+        LD A,(HL)
+        INC H
+        LD L,D
+        OR (HL)
+        INC H
+        LD H,(HL)
+        LD L,A
+        LD DE,SCRBUF-16384
+        ADD HL,DE
+        LD A,(HL)
+        OR C
+        LD (HL),A               ;СТАВИМ ТОЧКУ В БУФЕРЕ
+        RET
+
+SET_TBL LD HL,SCR_TBL
+        LD B,L
+        LD A,#80
+SET_DOT LD (HL),A
+        RRCA
+        INC HL
+        DJNZ SET_DOT
+SET_DIV LD A,L
+        RRCA
+        RRCA
+        RRCA
+        AND 31
+        LD (HL),A
+        INC HL
+        DJNZ SET_DIV
+        LD B,#C0
+        LD DE,#4000
+SET_ADR LD (HL),E
+        INC H
+        LD (HL),D
+        DEC H
+        INC L
+        CALL DW_DE
+        DJNZ SET_ADR
+        RET
+
+DW_DE   INC D
+        LD A,D
+        AND 7
+        RET NZ
+        LD A,E
+        ADD A,32
+        LD E,A
+        RET C
+        LD A,D
+        SUB 8
+        LD D,A
+        RET
+
+DELEN   LD D,(HL)       ;ДЕЛИМ НА 8192
+        INC HL
+        LD E,(HL)
+        INC HL
+        LD A,E
+        LD E,D
+        LD D,0
+DUP 5
+        SRL E
+        RRA
+EDUP
+        JP C,DELEN1     ;ОКРУГЛЯЕМ ?
+        LD (HL),A
+        DEC HL
+        LD (HL),E
+        DEC HL
+        LD (HL),D
+        RET
+DELEN1  ADD A,1         ;YES OF COZZZ!
+        LD (HL),A
+        DEC HL
+        LD A,E
+        ADC A,0
+        LD (HL),A
+        DEC HL
+        LD A,D
+        ADC A,0
+        LD (HL),A
+        RET
+
+_NEGHL  EX AF,AF'       ;АНАЛОГ КОМАНДЫ  NEG , НО ДЛЯ  HL
+        LD A,H
+        CPL
+        LD H,A
+        LD A,L
+        CPL
+        LD L,A
+        INC HL
+        EX AF,AF'
+        RET
+
+; (HL)+(DE)=(BC)
+
+MATIKA  LD A,(DE)       ;ОЧЧЧЕНЬ НЕ ОПТИМАЛЬНАЯ ПРОЦЕДУРКА
+        CP (HL)         ;СКЛАДЫВАНИЯ (ВЫЧИТАНИЯ) ТРЕХБАЙТНЫХ
+        JP Z,MAT1       ;ЧИСЕЛ
+        INC A
+        JP NZ,MAT2
+        EX DE,HL
+MAT2    CALL MINUS
+        JP MAT4
+MAT1    INC A
+        JP Z,MAT3
+        CALL PLUS
+        JP MAT4
+MAT3    CALL PLUS
+        CPL
+MAT4    DEC BC
+        LD (BC),A
+        RET
+
+MINUS   INC HL
+        INC HL
+        INC HL
+        INC DE
+        INC DE
+        INC DE
+        INC BC
+        INC BC
+        INC BC
+        LD A,(DE)       ;(DE+2) ОТ ЧЕГО ОТНИМАТЬ
+        DEC DE          ;(HL+2) ЧТО ОТНИМАТЬ
+        OR A            ;(BC+2) ГДЕ СОХРАНЯТЬ ОТВЕТ
+        SBC A,(HL)
+        DEC HL
+        LD (BC),A
+        DEC BC
+        LD A,(DE)
+        DEC DE
+        SBC A,(HL)
+        DEC HL
+        LD (BC),A
+        DEC BC
+        LD A,(DE)
+        SBC A,(HL)
+        LD (BC),A
+        LD A,0          ;XOR A  СТАВИТЬ НЕЛЬЗЯ!
+        RET NC
+        INC BC
+        INC BC
+        LD A,(BC)       ;МЕНЯЕТ ЗНАК У ТРЕХБАЙТНОГО ЧИСЛА ПО
+        CPL             ;АДРЕСУ В  BC
+        ADD A,1         ;INC A СТАВИТЬ НЕЛЬЗЯ!
+        LD (BC),A
+        DEC BC
+        LD A,(BC)
+        CPL
+        ADC A,0
+        LD (BC),A
+        DEC BC
+        LD A,(BC)
+        CPL
+        ADC A,0
+        LD (BC),A
+        LD A,#FF
+        RET
+
+PLUS    INC HL
+        INC HL
+        INC HL
+        INC DE
+        INC DE
+        INC DE
+        INC BC
+        INC BC
+        INC BC
+        LD A,(DE)
+        DEC DE
+        ADD A,(HL)
+        DEC HL
+        LD (BC),A
+        DEC BC
+        LD A,(DE)
+        DEC DE
+        ADC A,(HL)
+        DEC HL
+        LD (BC),A
+        DEC BC
+        LD A,(DE)
+        ADC A,(HL)
+        LD (BC),A
+        XOR A
+        RET
+
+;OTBET = HL*CDE
+
+MULTI   LD A,H          ;БОЛЕЕ МЕНЕЕ СНОСНАЯ ПРОЦЕДУРКА
+        LD (_HL),A      ;УМНОЖЕНИЯ, ТРЕХБАЙТНЫЙ РЕЗУЛЬТАТ
+        LD A,L          ;ПО МЕТКЕ  (OTBET).
+        LD (_HL+1),A    ;ПРОЦЕДУРА, КОНЕЧНО, ТОРМОЗИТ, КАК И
+        XOR A           ;БОЛЬШЕНСТВО МОИХ ПРОГРАММ
+        LD HL,OTBET
+        LD (HL),A
+        INC HL
+        LD (HL),A
+        INC HL
+        LD (HL),A
+        LD B,16
+MULTI2  LD HL,_HL
+        SRL (HL)
+        INC HL
+        RR (HL)
+        JP NC,MULTI1
+        LD HL,OTBET+2
+        LD A,E
+        ADD A,(HL)
+        LD (HL),A
+        DEC HL
+        LD A,D
+        ADC A,(HL)
+        LD (HL),A
+        DEC HL
+        LD A,C
+        ADC A,(HL)
+        LD (HL),A
+MULTI1  SLA E
+        RL D
+        RL C
+        DJNZ MULTI2
+        RET
+_HL     DEFB 0,0
+OTBET   DEFB 0,0,0
+
+SIN     LD HL,90        ;DE = SIN (DE), A = #FF (-) ИЛИ 0 (+)
+        OR A
+        SBC HL,DE
+        JP NC,SIN1
+        LD HL,180
+        OR A
+        SBC HL,DE
+        JP NC,COS1
+        LD HL,270
+        OR A
+        SBC HL,DE
+        JP NC,SIN3
+SIN4    LD DE,90
+        ADD HL,DE
+        LD A,#FF
+        JP TAKE
+SIN3    LD DE,90
+        EX DE,HL
+        XOR A
+        SBC HL,DE
+        CPL
+        JP TAKE
+SIN1    XOR A
+        LD H,D
+        LD L,E
+        JP TAKE
+
+COS     LD HL,90        ;DE = COS (DE), A = #FF (-) ИЛИ 0 (+)
+        OR A
+        SBC HL,DE
+        JP NC,COS1
+        LD HL,180
+        OR A
+        SBC HL,DE
+        JP NC,COS2
+        LD HL,270
+        OR A
+        SBC HL,DE
+        JP NC,COS3
+COS4    LD DE,90
+        ADD HL,DE
+        LD DE,90
+        EX DE,HL
+        XOR A
+        SBC HL,DE
+        JP TAKE
+COS3    LD A,#FF
+        JP TAKE
+COS2    LD DE,90
+        EX DE,HL
+        XOR A
+        SBC HL,DE
+        CPL
+        JP TAKE
+COS1    XOR A
+TAKE    ADD HL,HL
+        LD DE,TABLESC
+        ADD HL,DE
+        LD E,(HL)
+        INC HL
+        LD D,(HL)
+        RET
+
+;ТАБЛИЦА СИНУСА УГЛОВ 0 - 90 УМНОЖЕННЫЕ НА 8192
+
+TABLESC DEFB 0,0,142,0,29,1,172,1,59,2
+        DEFB 201,2,88,3,230,3,116,4,1,5
+        DEFB 142,5,27,6,167,6,50,7,189,7
+        DEFB 72,8,210,8,91,9,227,9,107,10
+        DEFB 241,10,119,11,252,11,128,12,3,13
+        DEFB 134,13,7,14,135,14,5,15,131,15
+        DEFB 255,15,123,16,245,16,109,17,228,17
+        DEFB 90,18,207,18,66,19,179,19,35,20
+        DEFB 145,20,254,20,105,21,210,21,58,22
+        DEFB 160,22,4,23,103,23,199,23,38,24
+        DEFB 131,24,222,24,55,25,142,25,227,25
+        DEFB 54,26,135,26,214,26,35,27,109,27
+        DEFB 182,27,252,27,65,28,131,28,194,28
+        DEFB 0,29,59,29,116,29,171,29,223,29
+        DEFB 17,30,65,30,111,30,154,30,194,30
+        DEFB 232,30,12,31,46,31,76,31,105,31
+        DEFB 131,31,155,31,176,31,194,31,211,31
+        DEFB 224,31,236,31,244,31,251,31,254,31
+        DEFB 0,32
+
+M_A     DEFW 0          ;ALPHA
+M_X     DEFB 0          ;КООРДИНАТА  X  ЦЕНТРА ;ВОКРУГ КОТОРОГО
+M_Y     DEFB 0          ;КООРДИНАТА  Y  ЦЕНТРА ;БУДЕТ ПОВОРАЧИ-
+                                               ;ВАТЬСЯ СПРАЙТ
+M_J_    DEFW 0
+M_I_    DEFW 0
+M_J     DEFW 0          ;ШИРИНА СПРАЙТА
+M_I     DEFW 0          ;ВЫСОТА СПРАЙТА
+M_C     DEFS 3          ;COS (ALPHA')   ;ПЕРВЫЙ БАЙТ РАВЕН:
+M_S     DEFS 3          ;SIN (ALPHA')   ;#00 ЕСЛИ +
+M_PRO1  DEFS 4                          ;
+M_PRO2  DEFS 4                          ;
+M_PRO3  DEFS 4                          ;
+M_PRO4  DEFS 4                          ;
+BUF1    DEFS 1024
+BUF2    DEFS 1024
+BUF3    DEFS 768
+BUF4    DEFS 768
+        ORG $/256+1*256
+SCR_TBL DEFS 256*4
+SCRBUF  DEFS 6144
+LAST_B
+        ORG #6000

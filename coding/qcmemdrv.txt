@@ -1,0 +1,329 @@
+Прислано elfh, 26.12.06
+
+
+
+(с)Andrey Bogdanovich aka Spectre
+
+Этот драйвер поддерживает до 2Мб памяти (можно переделать
+под 4Мб), требует буфер из расчета 2 байта на страницу памяти, то есть
+для 2Мб это 256 байт, обычно буфер сидит в #5b00 (потому и ограничение
+в 2Мб). Сначала надо вызвать процедуру testram, а дальше одну из 3-х: ram0, ram1, ram2.
+
+;история версий:
+;first release in qc 2.7. #1ac
+;md4: +support atm2 1024, kay 1024. #1d4
+;md5: +support pentagon 2048. #1e1
+;     +full ports addresses (best pack). #1e4
+;md51: extout optimization for atm2. #1da
+;md52: +buffer protect. #1e2
+;md6: kill outc,outd,oute,hr1&2. #1c2
+;md7: no limit 1mb (now 2mb), no 48k support (jp to tr-dos),
+;     no page7 skip. #1a9
+;md7spec: спецверсия: с комментариями для народа, убраны qc про-
+;         цедуры. #152
+
+;разное:
+;поддерживаются следующие стандарты памяти:
+; pentagon 4096 (порт #aff7)
+; pentagon 1024 (надо держать shift для проверки)
+; pentagon 128..512
+; atm1 128..1024
+; atm2 128..1024
+; scorpion/kay 128..1024
+; profi 128..1024
+
+;процедуры:
+;testram - определение стандарта памяти и числа доступных
+;          страниц. если памяти <128к выходим в tr-dos.
+;          также строит таблицу доступных страниц (2 байта
+;          на каждую страницу, 2*128=256 байт максимум).
+;ram0 - включить нулевую страницу
+;ram1 - включить следующую страницу, установится флаг z если
+;       страница была последняя (при этом включится нулевая)
+;ram2 - включить страницу, с номером в регистре а. доп. проверок нет
+
+;переменные:
+;(ramsize+1) - число доступных страниц памяти (по 16384 байт)
+;(ram1+1) - текущая страница + 1
+
+pages=#5b00 ;здесь создадим таблицу страниц памяти
+
+testram
+        di
+        xor a
+        ld (cpages+1),a
+        call highram
+cpages  ld a,0
+        cp 8
+        ret c ;,trdos ;<128k
+        ld (ramsize+1),a
+
+        ld a,(8) ;skip 8 page on scorpion
+        cp #c3
+        jr z,ram0
+        xor a
+        ld (page8),a
+
+ram0    xor a
+        jr ram2
+
+ram1
+    ld a,0
+ram2    push bc
+        ld c,0
+        inc a
+        ld (ram1+1),a
+        dec a
+        cp 2
+        ccf
+        adc a,c
+        ccf
+        cp 5
+        ccf
+        adc a,c
+        cp 8
+        ccf
+page8   adc a,c ;nop
+ramsize cp 0
+        jr nc,begnmem
+        add a,a
+        ld h,high pages
+        ld l,a
+        push de
+        ld a,(hl)
+        inc hl
+        ld e,(hl)
+        call extout
+        pop de
+ram4    pop bc
+        ret
+
+begnmem xor a
+        ld (ram1+1),a
+        jr ram4
+
+extout0 xor a
+extout  push hl
+extport ld bc,0
+        ld l,a
+        ld a,b
+        cp #7f
+        ld a,l
+        jr nz,eo2
+        or e
+        jr eo3
+eo2     call outextp
+        ld bc,#7ffd
+        ld a,e
+eo3     out (c),a
+        pop hl
+        ret
+
+outextp inc b
+        jr z,outatm2
+        dec b
+        out (c),a
+        ret
+
+outatm2
+    dec b
+        cpl
+        ld hl,#2a53
+phl3d2f push hl
+        jp #3d2f
+
+highram
+        ld hl,#aff7
+        ld a,%00000011 ; pentagon 4096
+        call rtable
+        ld hl,#fff7
+        ld a,%00111000 ; atm2 1024
+        call rtable
+        ld hl,#1ffd
+        ld a,%11010000 ; scorp/kay 1024
+        call rtable
+        ld hl,#dffd
+        ld a,%00000111 ; profi 1024
+        call rtable
+        ld hl,#fdfd
+        ld a,%00000111 ; atm1 1024
+        call rtable
+        ld a,#fe
+        in a,(#fe)
+        rra
+        ld a,%00000001 ;pent 512
+        jr c,$+4
+        ld a,%00100000 ; pent 1024
+        call rtab7f
+        ret
+
+rtab7f  ld hl,#7ffd
+rtable  ld (extport+1),hl
+        ld (linmask+1),a
+        ld hl,#c000
+        ld de,#110
+
+        call extout0
+        ld a,(hl)
+        push af
+        inc (hl)
+        call calcline
+        dec (hl)
+        call extout0
+        pop af
+        cp (hl)
+        ret z
+        dec (hl)
+        call calcline
+        inc (hl)
+        ;call extout0
+
+        ld a,rtc1-rtcall-2
+        call rt0
+        ld a,rtc2-rtcall-2
+        call rt1
+        ld bc,pages
+        ld a,rtc3-rtcall-2
+        call rt1
+        ld a,c
+        srl a
+        ld (cpages+1),a
+        ld a,rtc4-rtcall-2
+        call rt0
+        or h
+noret   pop bc
+        ret
+
+rt0     ld bc,#4000
+rt1     ld (rtcall+1),a
+        ld d,-1
+rt2     inc d
+        ld e,0
+rt3     push de
+
+        ld a,e
+        or a
+        rla
+        rla
+        rla
+        or e
+        and #c7
+        or #10
+        ld e,a
+
+        call calcline
+        call rtcall
+        pop de
+        inc e
+        bit 5,e
+        jr z,rt3
+        ld e,#10
+        call calcline
+        jr nz,rt2
+        ld d,0
+
+calcline
+        push bc,de
+        ld b,8
+linmask ld c,0
+        xor a
+calcl2  rrc c
+        jr nc,$+4
+        rr d
+        rra
+        djnz calcl2
+        cp c
+        push af
+        call extout
+        pop af
+        pop de,bc
+        ret
+
+rtcall  jr $
+
+rtc1    ld a,(hl)
+        ld (bc),a
+        inc bc
+        ret
+
+rtc2    ld (hl),l
+        ret
+
+rtc3    inc (hl)
+        dec (hl)
+        ret nz
+        ld (hl),h
+
+        bit 2,b
+        ret nz ;end of buffer (256 bytes)
+
+        ld (bc),a
+        inc bc
+        ld a,e
+        ld (bc),a
+        inc bc
+        ret
+
+rtc4    ld a,(bc)
+        ld (hl),a
+        inc bc
+        ret
+ 
+ 
+elfh> Немного поделюсь своим опытом использования. Совсем недавно я первый раз
+разрабатывал программу под ATM2. По-началу все шло хорошо, но когда я стал
+активно переключать странички вне прерываний, то столкнулся с разного рода
+глюками, связанными со спецификой работы с портом расширения - через ПЗУ TR-Dos.
+Т.е. если прерывание срабатывает в момент выполнения программы по адресам #2a53-
+#2a55 или #3d2f-#3d30, то проще всего включить нужную страничку перед выходом из
+программы обработки прерываний и сдвинуть указатель стека на несколько байт
+вперед. Вот пример (по синтаксису SjAsm цифрами в начале строки обозначены
+локальные метки):
+
+onint
+    ld (onint4+1),sp
+    ld sp,#bfb0
+    di
+        push hl,de,bc,af
+        exx
+        exa
+        push hl,de,bc,af,ix,iy
+        ld hl,(onint4+1)
+        ld b,h
+        ld c,l
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld hl,#3d2f
+        and a
+        sbc hl,de
+        jr z,2f     ;переход на метку 2
+    ld hl,#3d30
+        and a
+        sbc hl,de
+        jr z,2f
+    ld hl,#2a53
+    and a
+        sbc hl,de
+        jr z,3f
+    ld hl,#2a55
+    and a
+        sbc hl,de
+        jr z,3f
+    jr 1f
+ 
+2       inc bc
+        inc bc
+3       inc bc
+        inc bc
+        ld (onint4+1),bc
+1
+pagout  ld a,#0         ;сюда всегда заносим номер страницы, включаемой вне прерываний
+        call ram2
+        pop iy,ix,af,bc,de,hl
+        exa
+        exx
+        pop af,bc,de,hl
+        ei
+onint4  ld sp,0
+    ret

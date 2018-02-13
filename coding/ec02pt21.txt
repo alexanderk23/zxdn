@@ -1,0 +1,1405 @@
+Из газеты Echo #2, Брест, 12.1996
+
+
+
+(C) VfNG/NEW
+
+   Многим  в  процессе  написаний эффектов не хватало где-нибудь
+пары тысяч тактов. Обычно в таких случаях первым делом  пытаются
+оптимизировать проигрыватель музыки. Думаю, что не лишним  будет
+опубликовать  форматы  компилированых  модулей  самых  известных
+музыкальных редакторов. Это немного облегчит вам жизнь и сделает
+более простым ковыряние в старом PLAYER'е.
+
+   Начнем, пожалуй, с PRO TRACKER 2.101 by GDC. В следующий раз,
+может быть, опубликуем формат музыки STP PRO.
+
+   Tерминология:
+
+QUARK: те элементы, из которых состоят SAMPLES, ORNAMENTS.
+
+QUANT:  число  QUARKS в каждом элементе PATTERN. Фактически-ско-
+рость проигрывания;
+
+PATTERN: куплет;
+
+POSITION LIST: порядок проигрывания PATTERNS;
+
+POSITION: позиция в POSITION LIST;
+
+
+                 Формат компилированого модуля:
+
++0
+   DELAY-число QUARKS, за которое проигрывается 1 QUANT;
+
++1
+   MUS_LEN-число позиций в мелодии;
+
++2
+   LOOP TO POSITION-номер позиции, в которую будет производиться
+зацикливание по проигрывании всей мелодии (0-#FF);
+
++3,64
+   SAMP_A-смещения от +0 до каждого из 32-х SAMPLE. SAMPLE с но-
+мером 0-не описан. Его номер используется для заглушения канала.
+
++67,32
+   ORN_A-аналогично  SAMP_A  для  16  орнаментов. Орнамент номер
+0-отсутствие орнамента.
+
++99,2
+   PAT_OFFSET-смещение  от  +0  до  первого описателя PATTERN'ов
+PAT.
+
++101,30
+   NAME-имя музыки в ASCII.
+
++131
+   POSITION  LIST-список позиций-номера PATTERN для каждой пози-
+ции. Окончание таблицы-#FF.
+
++?
+   PAT-описатели PATTERN'ов. Kaждый PATTERN состоит из 3-х кана-
+лов. В этой таблице-смещения от +0 до описателей каналов каждого
+PATTERN.  Таким  образом  по  6  байт/PATTERN.  Окончание табли-
+цы-#0000.
+
++?
+   CHAN-описатели  каналов. Канал представлен в виде списка бай-
+тов, которые анализируются следующим образом:
+
+LOOP   LD A,(DE)
+       INC DE
+       ADD A,#20
+       JR C,L1
+       ADD A,#60
+       JR C,L2
+       ADD A,#10
+       JR C,L3
+       ADD A,#10
+       JR C,L4
+       ADD A,#40
+       JR C,L5
+       ADD A,#10
+       JR C,L6
+       INC A
+       JR Z,L7
+       INC A
+       JR Z,L8
+       INC A
+       JR Z,L9
+       INC A
+       JR NZ,L10
+L11 Отключение команд и переход на LOOP.
+
+L10  Извлечь следующий байт-в нем значение прибавления к частоте
+NOISE. Затем на LOOP.
+
+L9  Извлечь три байта. В 1-м значение PORT, т.е. то число, кото-
+рое  будет  прибавляться к текущей частоте ноты. Следует учесть,
+что значение частоты самой высокой ноты самое маленькое, а самой
+низкой-самое большое, значит: положит. 128-255, отриц. 0-127. Во
+2-м и 3-м байтах-разница в значениях частоты новой (той на кото-
+рой вызван PORT) и предидущей ноты. Существует ошибка компилято-
+ра,  который  неверно  определяет  это значение, если новая нота
+стоит  в  начале PATTERN. Команду следует выключить, когда сумма
+прибавлений из +1 превысит значение +2,+3. Переход на LOOP.
+
+L8  Извлечь  1  байт.  В нем значение GLISSADE. Знаки-аналогично
+PORT. Затем переход на LOOP.
+
+L7 Извлечь 1 байт. В нем значение для DELAY (скорость проигрыва-
+ния). Затем переход на LOOP.
+
+L6  В А-громкость (0-F). Это значение умножается на 16 и прибав-
+ляется к началу таблицы TABL1. К полученому значению следует от-
+носиться  как к началу 16-байтовой таблицы, где содержаться зна-
+чения  для регистров амплитуды сопроцессора для каждого значения
+извлекаемого из SAMPLE. Затем переход на LOOP.
+
+L5  В  А-сколько  QUANTS  не  надо проводить анализ канала, т.е.
+расстояние  в QUANTS между очередными изменениями параметров ка-
+нала. Затем на LOOP.
+
+L4  В  А-номер орнамента. Если равен 0, то отсутствие орнамента.
+Переход на LOOP.
+
+L3  Если  А=0 то выход. Если 0<А<F, то установка типа огибающей,
+затем  извлечение 2-х следующих байт с периодом огибающей, пере-
+ход на LOOP. Ecли А=F, то отключение огибающих, переход на LOOP.
+
+L2 В А-номер ноты. Всего 8 октав по 12 нот, итого 96 нот. Значе-
+ния  частоы для каждой из нот в таблице TABL2 (по 2 байта/кажда-
+я). Переход на LOOP.
+
+L1  В А-номер SAMPLE. Eсли=0, то отключение канала, выход. Иначе
+установка номера SAMPLE и переход на LOOP.
+
++?
+   SAMPLES-описатели SAMPLES. Каждый SAMPLE состоит из:
+
+   ++0 Число QUARKS в SAMPLE.
+
+   ++1 Номер QUARK в SAMPLE, на который производиться зациклива-
+ние по окончании SAMPLE.
+
+   ++2 Описатели QUARKS по 3 байта каждый:
+
+      +++0
+           Биты 7-3-частота NOISE (0-31);
+           Бит 2-знак вибратто (1="-", 0="+");
+           Бит 1-маска TONE;
+           Бит 0-маска NOISE.
+
+      +++1
+           Биты 7-4-амплитуда (0-15);
+           Биты 3-0-старшая часть значения частотного вибратто.
+
+      +++2
+           Биты 7-0-младшая часть значения частотного вибратто.
+
++?
+   ORNAMENTS-описатели орнаментов. Они состоят из:
+
+   ++0-Длина орнамента в QUARKS;
+
+   ++1-Номер QUARK в орнаменте, на который надо перейти по окон-
+чании ORNAMENT;
+
+   ++2-Отклонения  от текущего значения ноты в полутонах. Значе-
+ния 0-63. Старший бит-знаковый:0='+',1='-'.
+
+   В  описании могут быть отдельные неточности, которые нетрудно
+обнаружить и скорректировать.
+
+   Теперь  о том, как вообще происходит проигрывание музыки. Бе-
+рется значение DELAY и записывается в спец. переменную. При каж-
+дом вызове проигрывателя это значение уменьшается на 1. Если оно
+больше  2-х, то параметры каналов не меняются. Если 2, то прове-
+ряется  на  конец  канал. Если конец-то обрабатывается следующая
+позиция,  устанавливаются новые значения в переменные, указываю-
+щие  на  текущие позиции в каналах. Обрабатывается канал А. Если
+1,  то обрабатывается канал B. Если 0, то обрабатывается канал C
+и  полученные  данные  в  результате обработки всех трех каналов
+(номера  SAMPLES, ORNAMENTS, etc...) устанавливаются на проигры-
+вание, переменная снова получает значение DELAY.
+
+
+                     ***** ПРИЛОЖЕНИЕ *****
+
+;Стандартный проигрыватель. Здесь же и таблички.
+;---------------------------------------------------------------
+        LD      HL,MUSIC ;Адрес компилированного модуля
+        JP      INIT     ;Инициализация
+        JP      PLAY     ;Проигрывание
+INIT    DI
+        PUSH    HL
+        LD      (LF84D+1),HL
+        PUSH    HL
+        LD      A,(HL)
+        LD      (LFBE0+1),A
+        LD      (LFAB2+1),A
+        INC     HL
+        INC     HL
+        LD      A,(HL)
+        INC     HL
+        LD      (LF7F0+1),HL
+        LD      DE,#0020
+        ADD     HL,DE
+        ADD     HL,DE
+        LD      (LF803+1),HL
+        ADD     HL,DE
+        LD      E,(HL)
+        INC     HL
+        LD      D,(HL)
+        INC     HL
+        LD      BC,#001E
+        ADD     HL,BC
+        LD      (LF83A+1),HL
+        LD      C,A
+        ADD     HL,BC
+        LD      (LF82F+1),HL
+        POP     HL
+        ADD     HL,DE
+        LD      (LF848+1),HL
+        LD      HL,LF74B
+        LD      DE,LF74C
+        LD      BC,#000D
+        LD      (HL),B
+        LDIR
+        XOR     A
+        LD      (LF748),A
+        LD      (LF749),A
+        LD      (LF74A),A
+        LD      (LFB38+1),A
+        LD      (LFB9D+1),A
+        LD      (LF8DA+1),A
+        LD      (LF959+1),A
+        LD      (LF9DB+1),A
+        LD      (LFB33+1),A
+        LD      (LFB98+1),A
+        LD      (LF928+1),A
+        LD      (LF9AA+1),A
+        LD      (LFA2D+1),A
+        LD      B,A
+        CPL
+        LD      (LF8AE+1),A
+        LD      (LF92D+1),A
+        LD      (LF9AF+1),A
+        LD      A,#2F
+        LD      (LFB82),A
+        LD      (LFB1D),A
+        LD      HL,TABL1_F
+        LD      (LFB3D+1),HL
+        LD      (LFBA2+1),HL
+        LD      (LF923+1),HL
+        LD      (LF9A5+1),HL
+        LD      (LFA28+1),HL
+        CALL    LF836
+        LD      (LFACA+1),DE
+        POP     BC
+        LD      (LF816+1),SP
+LF7F0   LD      SP,#0000
+        LD      DE,SMP_A
+        LD      A,#20
+LF7F8   POP     HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (HL),E
+        INC     HL
+        LD      (HL),D
+        INC     HL
+        EX      DE,HL
+        DEC     A
+        JR      NZ,LF7F8
+LF803   LD      SP,#0000
+        LD      DE,ORN_A
+        LD      A,#10
+LF80B   POP     HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (HL),E
+        INC     HL
+        LD      (HL),D
+        INC     HL
+        EX      DE,HL
+        DEC     A
+        JR      NZ,LF80B
+LF816   LD      SP,#0000
+        LD      HL,(ORN_A)
+        LD      (LFB4D+1),HL
+        LD      (LFBB2+1),HL
+        LD      (LF8B9+1),HL
+        LD      (LF938+1),HL
+        LD      (LF9BA+1),HL
+        CALL    INITVOL
+        JP      LFA32
+
+PLAY    DI
+        XOR     A
+        LD      B,A
+        EX      AF,AF'
+LFAB2   LD      A,#03
+        DEC     A
+        LD      (LFAB2+1),A
+        JR      Z,LFAF8
+        DEC     A
+        JR      Z,LFADF
+        DEC     A
+        JP      NZ,LF8AE
+        LD      HL,LF748
+        DEC     (HL)
+        JP      P,LF8AE
+LFAC8   LD      (HL),#00
+LFACA   LD      DE,#0000
+        LD      A,(DE)
+        AND     A
+        CALL    Z,LF836
+        CALL    LFC74
+        LD      (LFACA+1),DE
+        LD      (LFB0C),A
+        JP      LF8AE
+LFADF   LD      HL,LF749
+        DEC     (HL)
+        JP      P,LF8AE
+LFAE6   LD      (HL),#00
+LFAE8   LD      DE,#0000
+        CALL    LFD98
+        LD      (LFAE8+1),DE
+        LD      (LFB71),A
+        JP      LF8AE
+LFAF8   LD      HL,LF74A
+        DEC     (HL)
+        JP      P,LFB0B
+LFAFF   LD      (HL),#00
+LFB01   LD      DE,#0000
+        CALL    LFE9F
+        LD      (LFB01+1),DE
+LFB0B   XOR     A
+LFB0C   NOP
+        JR      NC,LFB2D
+        LD      (LFB0C),A
+        LD      (LF8E7+2),A
+        LD      H,A
+        LD      L,A
+        LD      (LF8B3+1),HL
+        LD      (LF8DF+1),HL
+LFB1D   CPL
+        LD      (LF8AE+1),A
+LFB21   LD      A,#00
+        LD      (LF8D8+1),A
+LFB26   LD      HL,#0000
+        LD      (LF8B6+1),HL
+        XOR     A
+LFB2D   NOP
+        JR      NC,LFB44
+        LD      (LFB2D),A
+LFB33   LD      A,#00
+        LD      (LF928+1),A
+LFB38   LD      A,#00
+        LD      (LF8DA+1),A
+LFB3D   LD      HL,#0000
+        LD      (LF923+1),HL
+        XOR     A
+LFB44   NOP
+        JR      NC,LFB54
+        LD      (LF8B3+1),A
+        LD      (LFB44),A
+LFB4D   LD      HL,#0000
+        LD      (LF8B9+1),HL
+        XOR     A
+LFB54   NOP
+        JR      NC,LFB71
+        LD      (LFB54),A
+LFB5A   LD      A,#00
+        LD      (LF902+1),A
+LFB5F   LD      HL,#0000
+        LD      (LF8F1+1),HL
+LFB65   LD      A,#00
+        LD      (LF916+1),A
+LFB6A   LD      HL,#0000
+        LD      (LF8E7+1),HL
+        XOR     A
+LFB71   NOP
+        JR      NC,LFB92
+        LD      H,A
+        LD      L,A
+        LD      (LF966+2),A
+        LD      (LF95E+1),HL
+        LD      (LF932+1),HL
+        LD      (LFB71),A
+LFB82   CPL
+        LD      (LF92D+1),A
+LFB86   LD      A,#00
+        LD      (LF957+1),A
+LFB8B   LD      HL,#0000
+        LD      (LF935+1),HL
+        XOR     A
+LFB92   NOP
+        JR      NC,LFBA9
+        LD      (LFB92),A
+LFB98   LD      A,#00
+        LD      (LF9AA+1),A
+LFB9D   LD      A,#00
+        LD      (LF959+1),A
+LFBA2   LD      HL,#0000
+        LD      (LF9A5+1),HL
+        XOR     A
+LFBA9   NOP
+        JR      NC,LFBB9
+        LD      (LF932+1),A
+        LD      (LFBA9),A
+LFBB2   LD      HL,#0000
+        LD      (LF938+1),HL
+        XOR     A
+LFBB9   NOP
+        JR      NC,LFBD5
+        LD      (LFBB9),A
+LFBBF   LD      HL,#0000
+        LD      (LF970+1),HL
+LFBC5   LD      A,#00
+        LD      (LF981+1),A
+LFBCA   LD      A,#00
+        LD      (LF995+1),A
+LFBCF   LD      HL,#0000
+        LD      (LF966+1),HL
+LFBD5   LD      A,#00
+        LD      (LF758),A
+LFBDA   LD      HL,#0000
+        LD      (LF756),HL
+LFBE0   LD      A,#05
+        LD      (LFAB2+1),A
+        XOR     A
+        LD      (LFBD5+1),A
+        JP      LF8AE
+LF863   LD      A,E
+        ADD     A,A
+        ADD     A,E
+        LD      E,A
+        LD      D,#00
+        ADD     HL,DE
+        LD      A,(HL)
+        RRA
+        JR      NC,LF870
+        LD      D,#04
+LF870   RRA
+        RL      D
+        RRA
+        EX      AF,AF'
+        INC     HL
+        LD      A,(HL)
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        AND     #0F
+        EX      AF,AF'
+        BIT     3,D
+        JR      NZ,LF888
+        PUSH    AF
+        ADD     A,B
+        LD      (LF751),A
+        POP     AF
+LF888   LD      A,(HL)
+        RLA
+        AND     #1F
+        INC     HL
+        LD      L,(HL)
+        LD      H,A
+        DB    #DD
+        LD      H,D
+        EX      DE,HL
+        LD      B,#00
+LF894   LD      HL,#0000
+        ADD     HL,BC
+        DB    #DD
+        LD      A,L
+        ADD     A,(HL)
+        ADD     A,A
+        LD      C,A
+        LD      HL,TONE_TB
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        SRL     D
+        JR      C,LF8AC
+        SBC     HL,DE
+        RET
+LF8AC   ADD     HL,DE
+        RET
+LF8AE   LD      A,#00
+        INC     A
+        JR      Z,LF92A
+LF8B3   LD      BC,#0000
+LF8B6   LD      DE,#0000
+LF8B9   LD      HL,#0000
+        LD      A,C
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF8C3
+        LD      A,(HL)
+LF8C3   LD      (LF8B3+1),A
+        INC     HL
+        LD      (LF894+1),HL
+        EX      DE,HL
+        LD      A,B
+        LD      E,A
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF8D3
+        LD      A,(HL)
+LF8D3   LD      (LF8B3+2),A
+        INC     HL
+        DB    #DD
+LF8D8   LD      L,#00
+LF8DA   LD      B,#00
+        CALL    LF863
+LF8DF   LD      DE,#0000
+        ADD     HL,DE
+        LD      (LF74B),HL
+        EX      DE,HL
+
+LF8E7   LD      DE,#0000
+        DEC     D
+        JP      M,LF91C
+        JR      Z,LF916
+        PUSH    HL
+LF8F1   LD      HL,#0000
+        LD      A,E
+        AND     A
+        JP      P,LF8FB
+        NEG
+LF8FB   LD      C,A
+        AND     A
+        SBC     HL,BC
+        JR      NC,LF912
+        POP     HL
+LF902   LD      A,#00
+        LD      (LF8D8+1),A
+        XOR     A
+        LD      (LF8E7+2),A
+        LD      H,A
+        LD      L,A
+        LD      (LF8DF+1),HL
+        JR      LF91C
+LF912   LD      (LF8F1+1),HL
+        POP     HL
+LF916   LD      D,#00
+        ADD     HL,DE
+        LD      (LF8DF+1),HL
+LF91C   DB    #DD
+        LD      A,H
+        LD      (LF752),A
+        EX      AF,AF'
+        LD      C,A
+
+LF923   LD      HL,#0000
+        ADD     HL,BC
+        LD      A,(HL)
+LF928   OR      #00
+LF92A   LD      (LF753),A
+LF92D   LD      A,#00
+        INC     A
+        JR      Z,LF9AC
+LF932   LD      BC,#0000
+LF935   LD      DE,#0000
+LF938   LD      HL,#0000
+        LD      A,C
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF942
+        LD      A,(HL)
+LF942   LD      (LF932+1),A
+        INC     HL
+        LD      (LF894+1),HL
+        EX      DE,HL
+        LD      A,B
+        LD      E,A
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF952
+        LD      A,(HL)
+LF952   LD      (LF932+2),A
+        INC     HL
+        DB    #DD
+LF957   LD      L,#00
+LF959   LD      B,#00
+        CALL    LF863
+LF95E   LD      DE,#0000
+        ADD     HL,DE
+        LD      (LF74D),HL
+        EX      DE,HL
+LF966   LD      DE,#0000
+        DEC     D
+        JP      M,LF99B
+        JR      Z,LF995
+        PUSH    HL
+LF970   LD      HL,#0000
+        LD      A,E
+        AND     A
+        JP      P,LF97A
+        NEG
+LF97A   LD      C,A
+        AND     A
+        SBC     HL,BC
+        JR      NC,LF991
+        POP     HL
+LF981   LD      A,#00
+        LD      (LF957+1),A
+        XOR     A
+        LD      (LF966+2),A
+        LD      H,A
+        LD      L,A
+        LD      (LF95E+1),HL
+        JR      LF99B
+LF991   LD      (LF970+1),HL
+        POP     HL
+LF995   LD      D,#00
+        ADD     HL,DE
+        LD      (LF95E+1),HL
+LF99B   DB    #DD
+        LD      A,H
+        LD      HL,LF752
+        RLCA
+        OR      (HL)
+        LD      (HL),A
+        EX      AF,AF'
+        LD      C,A
+LF9A5   LD      HL,#0000
+        ADD     HL,BC
+        LD      A,(HL)
+LF9AA   OR      #00
+LF9AC   LD      (LF754),A
+
+LF9AF   LD      A,#00
+        INC     A
+        JR      Z,LFA2F
+LF9B4   LD      BC,#0000
+LF9B7   LD      DE,#0000
+LF9BA   LD      HL,#0000
+        LD      A,C
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF9C4
+        LD      A,(HL)
+LF9C4   LD      (LF9B4+1),A
+        INC     HL
+        LD      (LF894+1),HL
+        EX      DE,HL
+        LD      A,B
+        LD      E,A
+        INC     A
+        CP      (HL)
+        INC     HL
+        JR      NZ,LF9D4
+        LD      A,(HL)
+LF9D4   LD      (LF9B4+2),A
+        INC     HL
+        DB    #DD
+LF9D9   LD      L,#00
+LF9DB   LD      B,#00
+        CALL    LF863
+LF9E0   LD      DE,#0000
+        ADD     HL,DE
+        LD      (LF74F),HL
+        EX      DE,HL
+LF9E8   LD      DE,#0000
+        DEC     D
+        JP      M,LFA1D
+        JR      Z,LFA17
+        PUSH    HL
+LF9F2   LD      HL,#0000
+        LD      A,E
+        AND     A
+        JP      P,LF9FC
+        NEG
+LF9FC   LD      C,A
+        AND     A
+        SBC     HL,BC
+        JR      NC,LFA13
+LFA02   LD      A,#00
+        LD      (LF9D9+1),A
+        XOR     A
+        LD      (LF9E8+2),A
+        LD      H,A
+        LD      L,A
+        LD      (LF9E0+1),HL
+        POP     HL
+        JR      LFA1D
+LFA13   LD      (LF9F2+1),HL
+        POP     HL
+LFA17   LD      D,#00
+        ADD     HL,DE
+        LD      (LF9E0+1),HL
+LFA1D   DB    #DD
+        LD      A,H
+        LD      HL,LF752
+        RLCA
+        RLCA
+        OR      (HL)
+        LD      (HL),A
+        EX      AF,AF'
+        LD      C,A
+LFA28   LD      HL,#0000
+        ADD     HL,BC
+        LD      A,(HL)
+LFA2D   OR      #00
+LFA2F   LD      (LF755),A
+LFA32   LD      HL,LF758
+        LD      DE,#FFBF
+        LD      C,#FD
+        XOR     A
+        OR      (HL)
+        LD      A,#0D
+        JR      NZ,LFA47
+        SUB     #03
+        LD      HL,LF755
+        JR      LFA5C
+LFA47   LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+LFA5C   LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        LD      (LF752),A
+        LD      (LF758),A
+        RET
+LFBEC   LD      (LFB5A+1),A
+        LD      A,(LFB6A+2)
+        DEC     A
+        JR      Z,LFBFA
+        LD      A,C
+        LD      (LFB21+1),A
+        XOR     A
+LFBFA   LD      (LFB1D),A
+        LD      A,#37
+        LD      (LFB54),A
+        RET
+
+LFC03   EX      AF,AF'
+        LD      (LFB2D),A
+        LD      A,(LF8D8+1)
+        LD      C,A
+        EX      AF,AF'
+        LD      (LFB21+1),A
+        INC     B
+        JR      Z,LFBEC
+        XOR     A
+        LD      (LFB6A+2),A
+        LD      (LFB1D),A
+        LD      A,#37
+        RET
+LFC1C   ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        LD      HL,VOLTAB
+        LD      C,A
+        ADD     HL,BC
+        LD      (LFB3D+1),HL
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFC74
+LFC2E   LD      A,#37
+        LD      (LFB54),A
+        LD      A,(DE)
+        INC     DE
+        LD      H,#01
+        LD      L,A
+        LD      (LFB6A+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFC41
+        CPL
+LFC41   LD      (LFB65+1),A
+        DEC     B
+        JR      LFC74
+LFC47   LD      A,(DE)
+        INC     DE
+        LD      H,#02
+        LD      L,A
+        LD      (LFB6A+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFC55
+        CPL
+LFC55   LD      (LFB65+1),A
+        LD      A,(DE)
+        LD      L,A
+        INC     DE
+        LD      A,(DE)
+        INC     DE
+        LD      H,A
+        LD      (LFB5F+1),HL
+        DEC     B
+        JR      LFC74
+LFC64   LD      A,(DE)
+        INC     DE
+        LD      (LFB38+1),A
+        LD      A,#37
+        EX      AF,AF'
+        JR      LFC74
+LFC6E   LD      (LF748),A
+        LD      (LFAC8+1),A
+LFC74   LD      A,(DE)
+        INC     DE
+        ADD     A,#20
+        JR      C,LFCA5
+        ADD     A,#60
+        JR      C,LFC03
+        ADD     A,#10
+        JR      C,LFCE9
+        ADD     A,#10
+        JR      C,LFCB7
+        ADD     A,#40
+        JR      C,LFC6E
+        ADD     A,#10
+        JR      C,LFC1C
+        INC     A
+        JR      Z,LFD07
+        INC     A
+        JR      Z,LFC2E
+        INC     A
+        JR      Z,LFC47
+        INC     A
+        JR      NZ,LFC64
+        XOR     A
+        LD      (LFB6A+2),A
+        LD      A,#37
+        LD      (LFB54),A
+        JR      LFC74
+LFCA5   JR      Z,LFCCC
+        ADD     A,A
+        LD      HL,SMP_A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LFB26+1),HL
+        JP      LFC74
+LFCB7   LD      HL,ORN_A
+        ADD     A,A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LFB4D+1),HL
+        LD      A,#37
+        LD      (LFB44),A
+        JP      LFC74
+LFCCC   EX      AF,AF'
+        LD      (LFB2D),A
+        LD      A,#2F
+        LD      (LFB1D),A
+        LD      A,#37
+        RET
+LFCD8   EX      AF,AF'
+        LD      (LFB2D),A
+        LD      A,#A7
+        RET
+LFCDF   XOR     A
+        LD      (LFB33+1),A
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFC74
+LFCE9   JR      Z,LFCD8
+        CP      #0F
+        JR      Z,LFCDF
+        LD      (LFBD5+1),A
+        LD      A,#10
+        LD      (LFB33+1),A
+        LD      A,(DE)
+        LD      (LFBDA+1),A
+        INC     DE
+        LD      A,(DE)
+        LD      (LFBDA+2),A
+        INC     DE
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFC74
+LFD07   LD      A,(DE)
+        INC     DE
+        LD      (LFBE0+1),A
+        JP      LFC74
+LFD0F   LD      (LFBC5+1),A
+        LD      A,(LFBCF+2)
+        DEC     A
+        JP      Z,LFD1E
+        LD      A,C
+        LD      (LFB86+1),A
+        XOR     A
+LFD1E   LD      (LFB82),A
+        LD      A,#37
+        LD      (LFBB9),A
+        RET
+LFD27   EX      AF,AF'
+        LD      (LFB92),A
+        LD      A,(LF957+1)
+        LD      C,A
+        EX      AF,AF'
+        LD      (LFB86+1),A
+        INC     B
+        JR      Z,LFD0F
+        XOR     A
+        LD      (LFBCF+2),A
+        LD      (LFB82),A
+        LD      A,#37
+        RET
+LFD40   ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        LD      HL,VOLTAB
+        LD      C,A
+        ADD     HL,BC
+        LD      (LFBA2+1),HL
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFD98
+LFD52   LD      A,#37
+        LD      (LFBB9),A
+        LD      A,(DE)
+        INC     DE
+        LD      H,#01
+        LD      L,A
+        LD      (LFBCF+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFD65
+        CPL
+LFD65   LD      (LFBCA+1),A
+        DEC     B
+        JR      LFD98
+LFD6B   LD      A,(DE)
+        INC     DE
+        LD      H,#02
+        LD      L,A
+        LD      (LFBCF+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFD79
+        CPL
+LFD79   LD      (LFBCA+1),A
+        LD      A,(DE)
+        LD      L,A
+        INC     DE
+        LD      A,(DE)
+        INC     DE
+        LD      H,A
+        LD      (LFBBF+1),HL
+        DEC     B
+        JR      LFD98
+LFD88   LD      A,(DE)
+        INC     DE
+        LD      (LFB9D+1),A
+        LD      A,#37
+        EX      AF,AF'
+        JR      LFD98
+LFD92   LD      (LF749),A
+        LD      (LFAE6+1),A
+LFD98   LD      A,(DE)
+        INC     DE
+        ADD     A,#20
+        JR      C,LFDC9
+        ADD     A,#60
+        JR      C,LFD27
+        ADD     A,#10
+        JR      C,LFE0D
+        ADD     A,#10
+        JR      C,LFDDB
+        ADD     A,#40
+        JR      C,LFD92
+        ADD     A,#10
+        JR      C,LFD40
+        INC     A
+        JR      Z,LFE2B
+        INC     A
+        JR      Z,LFD52
+        INC     A
+        JR      Z,LFD6B
+        INC     A
+        JR      NZ,LFD88
+        XOR     A
+        LD      (LFBCF+2),A
+        LD      A,#37
+        LD      (LFBB9),A
+        JR      LFD98
+LFDC9   JR      Z,LFDF0
+        ADD     A,A
+        LD      HL,SMP_A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LFB8B+1),HL
+        JP      LFD98
+LFDDB   LD      HL,ORN_A
+        ADD     A,A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LFBB2+1),HL
+        LD      A,#37
+        LD      (LFBA9),A
+        JP      LFD98
+LFDF0   EX      AF,AF'
+        LD      (LFB92),A
+        LD      A,#2F
+        LD      (LFB82),A
+        LD      A,#37
+        RET
+LFDFC   EX      AF,AF'
+        LD      (LFB92),A
+        LD      A,#A7
+        RET
+LFE03   XOR     A
+        LD      (LFB98+1),A
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFD98
+LFE0D   JR      Z,LFDFC
+        CP      #0F
+        JR      Z,LFE03
+        LD      (LFBD5+1),A
+        LD      A,#10
+        LD      (LFB98+1),A
+        LD      A,(DE)
+        LD      (LFBDA+1),A
+        INC     DE
+        LD      A,(DE)
+        LD      (LFBDA+2),A
+        INC     DE
+        LD      A,#37
+        EX      AF,AF'
+        JP      LFD98
+LFE2B   LD      A,(DE)
+        INC     DE
+        LD      (LFBE0+1),A
+        JP      LFD98
+LFE33   EX      AF,AF'
+        LD      A,(LF9D9+1)
+        LD      C,A
+        EX      AF,AF'
+        LD      (LF9D9+1),A
+        INC     B
+        JR      Z,LFE46
+        XOR     A
+        LD      (LF9E8+2),A
+        JP      LFE55
+LFE46   LD      (LFA02+1),A
+        LD      A,(LF9E8+2)
+        DEC     A
+        JP      Z,LFE55
+        LD      A,C
+        LD      (LF9D9+1),A
+        XOR     A
+LFE55   LD      H,A
+        LD      L,A
+        LD      (LF9E0+1),HL
+        LD      (LF9AF+1),A
+        LD      (LF9B4+1),HL
+        RET
+LFE61   LD      A,(DE)
+        INC     DE
+        LD      H,#01
+        LD      L,A
+        LD      (LF9E8+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFE6F
+        CPL
+LFE6F   LD      (LFA17+1),A
+        DEC     B
+        JR      LFE9F
+LFE75   LD      A,(DE)
+        INC     DE
+        LD      L,A
+        LD      H,#02
+        LD      (LF9E8+1),HL
+        AND     A
+        LD      A,B
+        JP      P,LFE83
+        CPL
+LFE83   LD      (LFA17+1),A
+        LD      A,(DE)
+        LD      L,A
+        INC     DE
+        LD      A,(DE)
+        INC     DE
+        LD      H,A
+        LD      (LF9F2+1),HL
+        DEC     B
+        JR      LFE9F
+LFE92   LD      A,(DE)
+        INC     DE
+        LD      (LF9DB+1),A
+        JR      LFE9F
+LFE99   LD      (LF74A),A
+        LD      (LFAFF+1),A
+LFE9F   LD      A,(DE)
+        INC     DE
+        ADD     A,#20
+        JR      C,LFECB
+        ADD     A,#60
+        JR      C,LFE33
+        ADD     A,#10
+        JR      C,LFEF7
+        ADD     A,#10
+        JR      C,LFEDD
+        ADD     A,#40
+        JR      C,LFE99
+        ADD     A,#10
+        JR      C,LFF20
+        INC     A
+        JR      Z,LFF18
+        INC     A
+        JR      Z,LFE61
+        INC     A
+        JR      Z,LFE75
+        INC     A
+        JR      NZ,LFE92
+        XOR     A
+        LD      (LF9E8+2),A
+        JR      LFE9F
+LFECB   JR      Z,LFEF1
+        ADD     A,A
+        LD      HL,SMP_A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LF9B7+1),HL
+        JP      LFE9F
+LFEDD   LD      HL,ORN_A
+        ADD     A,A
+        LD      C,A
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (LF9BA+1),HL
+        XOR     A
+        LD      (LF9B4+1),A
+        JP      LFE9F
+LFEF1   LD      A,#FF
+        LD      (LF9AF+1),A
+        RET
+LFEF7   RET     Z
+        CP      #0F
+        JR      Z,LFF11
+        LD      (LFBD5+1),A
+        LD      A,#10
+        LD      (LFA2D+1),A
+        LD      A,(DE)
+        LD      (LFBDA+1),A
+        INC     DE
+        LD      A,(DE)
+        LD      (LFBDA+2),A
+        INC     DE
+        JP      LFE9F
+LFF11   XOR     A
+        LD      (LFA2D+1),A
+        JP      LFE9F
+LFF18   LD      A,(DE)
+        INC     DE
+        LD      (LFBE0+1),A
+        JP      LFE9F
+LFF20   ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        LD      HL,VOLTAB
+        LD      C,A
+        ADD     HL,BC
+        LD      (LFA28+1),HL
+        JP      LFE9F
+LF82F   LD      HL,#0000
+        LD      A,(HL)
+        ADD     A,A
+        JR      LF841
+LF836   LD      (LF85D+1),SP
+LF83A   LD      HL,#0000
+        LD      A,(HL)
+        ADD     A,A
+        JR      C,LF82F
+LF841   ADD     A,(HL)
+        ADD     A,A
+        INC     HL
+        LD      (LF83A+1),HL
+        LD      C,A
+LF848   LD      HL,#0000
+        ADD     HL,BC
+        LD      SP,HL
+LF84D   LD      BC,#0000
+        POP     HL
+        ADD     HL,BC
+        EX      DE,HL
+        POP     HL
+        ADD     HL,BC
+        LD      (LFAE8+1),HL
+        POP     HL
+        ADD     HL,BC
+        LD      (LFB01+1),HL
+LF85D   LD      SP,#0000
+        LD      B,#00
+        RET
+;---------------------------------------------------------------
+INITVOL LD      IX,VOLTAB
+        LD      DE,#0000
+        LD      B,#10
+INITV2  LD      HL,0
+        LD      C,#10
+INITV1  LD      A,L
+        RLA
+        LD      A,H
+        ADC     A,0
+INITV3  LD      (IX+0),A
+        ADD     HL,DE
+        INC     IX
+        DEC     C
+        JR      NZ,INITV1
+        LD      A,E
+        CP      119
+        JR      NZ,INITV4
+        INC     E
+INITV4  EX      DE,HL
+        LD      DE,17
+        ADD     HL,DE
+        EX      DE,HL
+        DJNZ    INITV2
+        RET
+;---------------------------------------------------------------
+TABL2
+TONE_TB DB    #F8,#0E,#10
+        DB    #0E,"`",#0D
+        DB    #80,#0C,#D8
+        DB    #0B,"(",#0B
+        DB    #88,#0A,#F0
+        DB    #09,"`",#09
+        DB    #E0,#08,"X"
+        DB    #08,#E0,#07
+        DB    "|",#07,#08
+        DB    #07,#B0,#06
+        DB    "@",#06,#EC
+        DB    #05,#94,#05
+        DB    "D",#05,#F8
+        DB    #04,#B0,#04
+        DB    "p",#04,","
+        DB    #04,#FD,#03
+        DB    #BE,#03,#84
+        DB    #03,"X",#03
+        DB    " ",#03,#F6
+        DB    #02,#CA,#02
+        DB    #A2,#02,"|"
+        DB    #02,"X",#02
+        DB    "8",#02,#16
+        DB    #02,#F8,#01
+        DB    #DF,#01,#C2
+        DB    #01,#AC,#01
+        DB    #90,#01,"{"
+        DB    #01,"e",#01
+        DB    "Q",#01,">"
+        DB    #01,",",#01
+        DB    #1C,#01,#0A
+        DB    #01,#FC,#00
+        DB    #EF,#00,#E1
+        DB    #00,#D6,#00
+        DB    #C8,#00,#BD
+        DB    #00,#B2,#00
+        DB    #A8,#00,#9F
+        DB    #00,#96,#00
+        DB    #8E,#00,#85
+        DB    #00,"~",#00
+        DB    "w",#00,"p"
+        DB    #00,"k",#00
+        DB    "d",#00,"^"
+        DB    #00,"Y",#00
+        DB    "T",#00,"O"
+        DB    #00,"K",#00
+        DB    "G",#00,"B"
+        DB    #00,"?",#00
+        DB    ";",#00,"8"
+        DB    #00,"5",#00
+        DB    "2",#00,"/"
+        DB    #00,",",#00
+        DB    "*",#00,"'"
+        DB    #00,"%",#00
+        DB    "#",#00,"!"
+        DB    #00,#1F,#00
+        DB    #1D,#00,#1C
+        DB    #00,#1A,#00
+        DB    #19,#00,#17
+        DB    #00,#16,#00
+        DB    #15,#00,#13
+        DB    #00,#12,#00
+        DB    #11,#00,#10
+        DB    #00,#0F,#00
+;---------------------------------------------------------------
+TABL1         ;ИНИЦИАЛИЗИРУЕТСЯ ПРОЦЕДУРОЙ
+              ;INITVOL
+VOLTAB  DS    #F0
+TABL1_F DS    #10
+;---------------------------------------------------------------
+LF748   DB    #00             ;COUNTER A
+LF749   DB    #00             ;COUNTER B
+LF74A   DB    #00             ;COUNTER C
+;---------------------------------------------------------------
+LF74B   DB    #00             ;TONE A
+LF74C   DB    #00
+LF74D   DB    #00,#00         ;TONE B
+LF74F   DB    #00,#00         ;TONE C
+LF751   DB    #00             ;NOISE
+LF752   DB    #00             ;MASKS
+LF753   DB    #00             ;AMPLITUDE A
+LF754   DB    #00             ;AMPLITUDE B
+LF755   DB    #00             ;AMPLITUDE C
+LF756   DB    #00             ;ENVELOPE TYPE
+LF757   DB    #00             ;ENVELOPE PERIOD
+LF758   DB    #00             ;
+;---------------------------------------------------------------
+SMP_A   DS    #40
+ORN_A   DS    #20
+;---------------------------------------------------------------

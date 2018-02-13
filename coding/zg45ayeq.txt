@@ -1,0 +1,656 @@
+Из журнала ZX-Guide#4.5, Рязань, 08.2002
+
+
+
+               Индикатор AY
+ 
+ Himik's ZxZ/PoS-WT
+ 
+   Хочу поделится своим индикатором частот
+AY музыки.Существует много способов разно-
+го отображения и уровня громкости и часто-
+ты.
+   Я не написал ничего нового, просто соб-
+рал  все сам и сделал вывод и просчет мак-
+симально быстрым.(На мой взгляд.)
+   В большинстве индикаторов,которые были,
+так сказать, частотными,процесс происходил
+довольно медленно и не верно.
+   Я же решил сделать свой, на основе час-
+тотной таблицы от редактора Advanced Sound
+Master, и думаю, это не будет особой проб-
+лемой,т.к. эта одна из самых верных часто-
+тных таблиц.
+   Взяв  во внимание  количество частотных
+характеристик из таблицы,понимаю,что в ней
+находится 86 нот. Т.е. семь полных октав и
+две ноты SubContr октавы.
+   Просчитал, на экране я могу визуально и
+более-менее  красиво  отобразить только 85
+частот,что,собственно,не пугает,т.к. самые
+низкие ноты звучат крайне редко.
+   Ширину частотного столбика я выбрал два
+пиксела, а промежуток между ними - один.
+   Ну, перейдем непосредственно к коду...
+ 
+ 
+;----------------------------------
+;Voice metter
+;by Himik's ZxZ
+;-----------------------------------
+ 
+FRQ     EQU #6200 ;Адрес частотной таблицы
+ADR_TAB2 EQU FRQ+#0100
+ADR_ET  EQU ADR_TAB2+#00C0
+ADR_TAB EQU ADR_ET+#0040             ;1440
+TO_VIW2 EQU FRQ+#1700
+TO_VIW  EQU FRQ+#17FF
+ 
+PROG    EQU FRQ+#1B00
+ADR_ECR EQU #47E0
+ 
+M_INIT  EQU #C00B ;Адрес иниц-зации музона
+M_PLAY  EQU #C00E   ;Адрес воспроизведения
+ 
+        ORG     #C000
+        INCBIN  "HI!!!.C"
+ 
+        ORG     PROG
+ 
+;IN ONE OCTAVE = 12 NOTES
+;FRQ TABLE=7 OCTAVES+2 NOTE SUBCONTROCTAVE
+;86 FRQ
+ 
+ 
+        CALL    INIT_C    ;Создаем таблицу
+                          ;вывода на экран
+                              ;и процедуры
+                      ;рисования по стеку.
+        CALL    M_INIT       ;инитим музон
+ 
+        LD      HL,#5B00
+        LD      D,H
+        LD      E,L
+        INC     E
+        LD      B,#01
+        LD      C,L
+        LD      (HL),#5C
+        LDIR
+        LD      (HL),#5C
+        LD      A,#C3
+        LD      (#5C5C),A
+        LD      HL,INT
+        LD      (#5C5D),HL
+        LD      A,#5B
+        LD      I,A
+        IM      2
+        EI   ;создали и врубили прерывания
+ 
+KEY     LD      BC,#7FFE
+        IN      A,(C)
+        BIT     0,A
+        JP      Z,EXIT  ;ожидание пробела.
+                           ;нажали - вышли
+        EI
+        HALT
+        JR      KEY
+ 
+EXIT    LD      A,#3F
+        LD      I,A
+        IM      1
+        EI
+        JP      M_INIT
+ 
+INT     DI
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+ 
+        LD      A,2
+        OUT     (#FE),A
+ 
+        CALL    SCRL      ;вызов процедуры
+                           ;скроллирования
+        LD      A,1
+        OUT     (#FE),A
+ 
+        CALL    M_PLAY        ;играем ноту
+ 
+        LD      A,3
+        OUT     (#FE),A
+ 
+        CALL    TEST     ;выводим столбики
+                                   ;частот
+        XOR     A
+        OUT     (#FE),A
+ 
+        POP     AF
+        POP     BC
+        POP     DE
+        POP     HL
+        EI
+        RET
+ 
+;Генератор таблицы для печати столбика
+;Генератор процедур вывода столбика
+ 
+INIT_C
+        LD      IX,ADR_TAB2
+        LD      HL,ADR_TAB
+        LD      DE,ADR_ECR
+        LD      B,11
+I0      PUSH    BC
+ 
+        XOR     A
+        LD      C,%11000000
+        CALL    MK_STOLB
+        LD      C,%00011000
+        CALL    MK_STOLB
+        LD      C,%00000011
+        CALL    MK_STOLB
+        INC     E
+ 
+        LD      C,%01100000
+        CALL    MK_STOLB
+        LD      C,%00001100
+        CALL    MK_STOLB
+        LD      A,#80
+        LD      C,%00000001
+        CALL    MK_STOLB
+        XOR     A
+        INC     E
+ 
+        LD      C,%00110000
+        CALL    MK_STOLB
+        LD      C,%00000110
+        CALL    MK_STOLB
+        INC     E
+ 
+        POP     BC
+        DJNZ    I0
+ 
+        LD      IX,TO_VIW
+        LD      DE,TO_VIW2
+        LD      A,15
+BC_0    LD      (IX+#00),E
+        DEC     IX
+        DEC     IX
+        LD      BC,B_2-B_1
+        LD      HL,B_1
+        LDIR
+        DEC     A
+        JR      NZ,BC_0
+        PUSH    DE
+        LD      A,#31
+        LD      (DE),A
+        INC     DE
+        LD      (ADR_WSP+2),DE
+        INC     DE
+        INC     DE
+        LD      A,#C9
+        LD      (DE),A
+        INC     DE
+        LD      IX,TO_VIW-#01
+ 
+        LD      A,15
+BC_1
+        LD      (IX+#00),E
+        DEC     IX
+        DEC     IX
+        LD      BC,B_4-B_3
+        LD      HL,B_3
+        LDIR
+        DEC     A
+        JR      NZ,BC_1
+        LD      A,#C3
+        LD      (DE),A
+        INC     DE
+        POP     HL
+        EX      DE,HL
+        LD      (HL),E
+        INC     HL
+        LD      (HL),D
+        LD      (TB_FR+1),IX
+        RET
+ 
+B_1
+        POP     HL
+        POP     AF
+        OR      (HL)
+        LD      (HL),A
+B_2
+ 
+B_3
+        POP     HL
+        POP     AF
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        SET     7,(HL)
+B_4
+ 
+;       %11011011
+;       %01101101
+;       %10110110
+ 
+MK_STOLB
+        PUSH    DE
+        LD      (IX+#00),L
+        LD      (IX+#01),H
+        INC     IX
+        INC     IX
+        LD      B,15
+I1      LD      (HL),E
+        INC     HL
+        LD      (HL),D
+        INC     HL
+        LD      (HL),A
+        INC     HL
+        LD      (HL),C
+        INC     HL
+        PUSH    AF
+        CALL    UPIX_DE
+        CALL    UPIX_DE
+        POP     AF
+        DJNZ    I1
+        POP     DE
+        RET
+ 
+A_FRQ   DEFW    #5000
+B_FRQ   DEFW    #5000
+C_FRQ   DEFW    #5000
+E_FRQ   DEFW    #5000
+ 
+;Чтение портов AY,просчёт и вывод частоты.
+;-----------------------------------------
+ 
+TEST
+        LD      L,1
+BCK_A   LD      H,#50
+        LD      DE,(A_FRQ)
+        CALL    IN_C
+        LD      (BCK_A+1),A     ;запомнили
+                          ;столбик частоты
+        LD      (A_FRQ),DE      ;запомнили
+                           ;частоту канала
+        LD      E,8
+        CALL    WWW
+CHN_B
+        LD      L,3
+BCK_B   LD      H,#50
+        LD      DE,(B_FRQ)
+        CALL    IN_C
+        LD      (BCK_B+1),A
+        LD      (B_FRQ),DE
+        LD      E,9
+        CALL    WWW
+CHN_C
+        LD      L,5
+BCK_C   LD      H,#50
+        LD      DE,(C_FRQ)
+        CALL    IN_C
+        LD      (BCK_C+1),A
+        LD      (C_FRQ),DE
+        LD      E,10
+        CALL    WWW
+ 
+;Обработчик шума
+;---------------
+ 
+NS
+        LD      A,#06
+        LD      BC,#FFFD
+        OUT     (C),A
+        EX      AF,AF'
+        IN      A,(C)
+        CPL
+        AND     #1F
+        EX      AF,AF'
+        LD      A,#07
+        OUT     (C),A
+        IN      A,(C)
+        RRA
+        RRA
+        RRA
+        RRA
+ 
+;Узнаём, в каком канале разрешен шум
+ 
+        LD      E,#08
+        PUSH    AF
+        CALL    NC,SH_NOISE
+        POP     AF
+        RRA
+        LD      E,#09
+        PUSH    AF
+        CALL    NC,SH_NOISE
+        POP     AF
+        RRA
+        LD      E,#0A
+        RET     C
+SH_NOISE
+        OUT     (C),E
+        IN      A,(C)
+        JP      WWW3
+WWW
+        LD      BC,#FFFD
+        OUT     (C),E
+        IN      A,(C)
+        BIT     4,A
+        JP      NZ,CHN_E         ;Проверка
+                             ;на огибающую
+WWW3    AND     #0F
+        OR      A
+        RET     Z
+WWW2
+        EX      AF,AF' ;Берём №o столбика,
+        ADD     A,A         ;умножили на 2
+        LD      L,A
+        LD      H,'ADR_TAB2 ;Получим адрес
+        LD      A,(HL)     ;начала таблицы
+        INC     HL       ;вывода столбика.
+        LD      H,(HL)
+        LD      L,A
+        EX      AF,AF'
+        ADD     A,A ;Умнож. громкость на 2
+ 
+ADR_WSP LD      (#0000),SP
+        LD      SP,HL
+TB_FR   LD      HL,#0000
+        ADD     A,L
+        LD      L,A
+        LD      D,H
+        LD      E,(HL)     ;Получаем адрес
+        INC     L        ;процедуры вывода
+        LD      L,(HL)           ;столбика
+ 
+        POP     BC      ;Сняли значения со
+        POP     AF ;стека и смотрим, попал
+        PUSH    AF ;наш столбик в зн-место
+        PUSH    BC ;или он между 2 зн-мест
+        JP      M,LIPA_1     ;Делаем выбор
+                        ;адресов процедур.
+        JP      (HL)  ;Попали в знакоместо
+LIPA_1  EX      DE,HL
+        JP      (HL) ;Не попали в зн-место
+ 
+CHN_E
+        LD      L,12
+BCK_E   LD      H,#50
+        LD      DE,(E_FRQ)
+        CALL    IN_C
+        LD      (BCK_E+1),A
+        LD      (E_FRQ),DE
+        LD      A,#0F
+        JP      WWW2
+ 
+;Читаем из портов частоту тона и
+;высчитываем номер столбика...
+ 
+IN_C
+        PUSH    DE
+        LD      A,H
+        LD      (PISK2+1),A
+        LD      BC,#FFFD
+        OUT     (C),L
+        IN      A,(C)
+        AND     #0F
+        LD      D,A
+        DEC     L
+        OUT     (C),L
+        IN      A,(C)
+        LD      E,A
+        INC     A
+        JR      C,PISKA
+        DEC     E
+ 
+PISKA   POP     HL    ;Сравнение текущей и
+        OR      A     ;предыдущей частоты.
+        SBC     HL,DE ;Если равны,получаем
+        JR      NZ,PISK1
+        EX      AF,AF'  ;Номер предыдущего
+                       ;столбика, не тратя
+PISK2   LD      A,#00            ;время на
+        LD      B,A       ;просчёт частоты
+        EX      AF,AF'
+        LD      A,B
+        RET
+ 
+PISK1   PUSH    DE
+        CALL    SELECT_TAB
+        EX      AF,AF'
+        LD      B,A
+        EX      AF,AF'
+        LD      A,B
+        POP     DE
+        RET
+ 
+UPIX_HL EX      DE,HL
+        CALL    UPIX_DE
+        EX      DE,HL
+        RET
+UPIX_DE DEC     D
+        LD      A,D
+        CPL
+        AND     #07
+        RET     NZ
+        LD      A,E
+        SUB     #20
+        LD      E,A
+        RET     C
+        LD      A,D
+        ADD     A,#08
+        LD      D,A
+        RET
+ 
+;Скролация экрана
+;Эта процедура на скорую руку, и ни фига
+;не та, которая должна быть...
+;типа по стеку там или еще как...
+ 
+SCRL
+        LD      HL,ADR_ECR-#0100
+        LD      DE,ADR_ECR
+CLS_V   LD      B,29 ;0F
+LLA857  PUSH    BC
+        PUSH    DE
+        PUSH    HL
+       DUP 32
+        LDI
+       EDUP
+ 
+        POP     HL
+        CALL    UPIX_HL
+        POP     DE
+        CALL    UPIX_DE
+        POP     BC
+        DJNZ    LLA857
+        RET
+ 
+;Пересчет частоты тона в номер столбика.
+ 
+SELECT_TAB
+        EX      AF,AF'
+        XOR     A
+        EX      AF,AF'
+ 
+        LD      A,D
+        OR      E
+        RET     Z
+ 
+        LD      A,D
+        ADD     A,A
+        LD      L,A
+        LD      H,#00
+        LD      BC,FRQ_T
+        ADD     HL,BC
+        LD      A,(HL)
+        INC     HL
+        LD      H,(HL)
+        LD      L,A
+        LD      (PI+1),SP
+        LD      SP,HL
+ST_NEXT POP     HL
+                ;L FRQ
+                ;H STOLB
+        LD      A,H
+        OR      L
+        LD      A,E
+        JP      Z,ST_PRED
+        BIT     7,H
+        JP      NZ,ST_OK
+        CP      L
+        JP      Z,ST_OK
+        JP      C,ST_NEXT
+ 
+ST_PRED
+        DEC     SP
+        DEC     SP
+ST_PRED2
+        DEC     SP
+        DEC     SP
+        POP     HL
+ 
+ST_OK
+        EX      AF,AF'
+        LD      A,H
+        AND     #7F
+        EX      AF,AF'
+ 
+PI      LD      SP,#0000
+        RET
+ 
+FRQ_T
+        DEFW    FRQ_0
+        DEFW    FRQ_1
+        DEFW    FRQ_2
+        DEFW    FRQ_3
+        DEFW    FRQ_4
+        DEFW    FRQ_5
+        DEFW    FRQ_6
+        DEFW    FRQ_7
+        DEFW    FRQ_8
+        DEFW    FRQ_9
+        DEFW    FRQ_A
+        DEFW    FRQ_B
+        DEFW    FRQ_C
+        DEFW    FRQ_D
+        DEFW    FRQ_E
+        DEFW    FRQ_F
+ 
+        ORG     FRQ
+FRQ_F
+        DEFB    #00,#00+#80
+FRQ_E
+        DEFB    #DC,#00
+        DEFB    #07,#01+#80
+FRQ_D
+        DEFB    #3E,#02+#80
+FRQ_C
+        DEFB    #80,#03+#80
+FRQ_B
+        DEFB    #CC,#04
+        DEFB    #22,#05+#80
+FRQ_A
+        DEFB    #82,#06+#80
+FRQ_9
+        DEFB    #EC,#07
+        DEFB    #5C,#08+#80
+FRQ_8
+        DEFB    #D6,#09
+        DEFB    #58,#0A+#80
+FRQ_7
+        DEFB    #E0,#0B
+        DEFB    #6E,#0C
+        DEFB    #04,#0D+#80
+FRQ_6
+        DEFB    #9F,#0E
+        DEFB    #40,#0F+#80
+FRQ_5
+        DEFB    #E6,#10
+        DEFB    #91,#11
+        DEFB    #41,#12+#80
+FRQ_4
+        DEFB    #F6,#13
+        DEFB    #AE,#14
+        DEFB    #6B,#15
+        DEFB    #2C,#16+#80
+FRQ_3
+        DEFB    #F0,#17
+        DEFB    #B7,#18
+        DEFB    #82,#19
+        DEFB    #4F,#1A
+        DEFB    #20,#1B+#80
+FRQ_2
+        DEFB    #F3,#1C
+        DEFB    #C8,#1D
+        DEFB    #A1,#1E
+        DEFB    #7B,#1F
+        DEFB    #57,#20
+        DEFB    #36,#21
+        DEFB    #16,#22+#80
+FRQ_1
+        DEFB    #F8,#23
+        DEFB    #DC,#24
+        DEFB    #C1,#25
+        DEFB    #A8,#26
+        DEFB    #90,#27
+        DEFB    #79,#28
+        DEFB    #64,#29
+        DEFB    #50,#2A
+        DEFB    #3D,#2B
+        DEFB    #2C,#2C
+        DEFB    #1B,#2D
+        DEFB    #0B,#2E+#80
+FRQ_0
+        DEFB    #FC,#2F
+        DEFB    #EE,#30
+        DEFB    #E0,#31
+        DEFB    #D4,#32
+        DEFB    #C8,#33
+        DEFB    #BD,#34
+        DEFB    #B2,#35
+        DEFB    #A8,#36
+        DEFB    #9F,#37
+        DEFB    #96,#38
+        DEFB    #8D,#39
+        DEFB    #85,#3A
+        DEFB    #7E,#3B
+        DEFB    #77,#3C
+        DEFB    #70,#3D
+        DEFB    #6A,#3E
+        DEFB    #64,#3F
+        DEFB    #5E,#40
+        DEFB    #59,#41
+        DEFB    #54,#42
+        DEFB    #50,#43
+        DEFB    #4B,#44
+        DEFB    #47,#45
+        DEFB    #43,#46
+        DEFB    #3F,#47
+        DEFB    #3C,#48
+        DEFB    #38,#49
+        DEFB    #35,#4A
+        DEFB    #32,#4B
+        DEFB    #2F,#4C
+        DEFB    #2D,#4D
+        DEFB    #2A,#4E
+        DEFB    #28,#4F
+        DEFB    #26,#50
+        DEFB    #24,#51
+        DEFB    #22,#52
+        DEFB    #20,#53         ;!!!
+        DEFB    #1E,#54
+        DEFB    #00,#00
+ 
+        ORG     PROG
+ 
+   Заметим, что и вывод,и просчет работают
+по стеку, а значит, жрут не так много вре-
+мени. Хотя...
+ 
+----------------------
+himik#udm.net
+2:5050/11.44
+www.pos.izhnet.ru

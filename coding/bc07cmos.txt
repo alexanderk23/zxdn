@@ -1,0 +1,657 @@
+Из журнала 'Чёрная Ворона 7'
+Украина, г.Дмитров/Харьков, 01.09.2001
+
+ 
+ 
+ПРОГРАММИРУЕМ CMOS на К512ВИ1
+(процедуры обработки часов)
+ 
+Pantera
+ 
+_________________________________________
+ 
+ 
+     Да,все кричат  вокруг  Cmos-часы это
+рулез,круто.Вот если бы хоть кто-то пока-
+зал как под них кодить.Я эти часики  себе
+давно уж как  собрал  и теперь решил, раз
+ни кто не хочет поделится с народом о ме-
+тодах   программирования,  то  значит это
+суждено:-) сделать мне.
+ 
+Доступ  к  часам   осуществляется   через
+регистр  управления   #EFF7  с маской #80
+включения и #00 маской выключения.
+ 
+Часы имеют также два регистра передачи:
+ 
+Регистр адреса  #DFF7 который  заказывает
+нужную ячейку памяти в Cmos. Этот регистр
+работает только на запись.
+ 
+Регистр данных #BFF7 через который проис-
+ходит запись/чтение значений Cmos.
+ 
+       LD   BC,#DFF7
+       LD   H,#11     ;открываем ячейку
+       OUT (C),H      ;#11
+       LD   BC,#BFF7
+       LD   L,#AA     ;записываем в эту
+       OUT (C),L      ;ячейку #AA
+       RET
+ 
+;для чтения из ячейки
+ 
+       LD   BC,#BFF7
+       IN   A,(C)     ;читаем из порта
+       CP   #AA       ;байт наличия cmos
+       RET  Z
+       RET
+ 
+ 
+Ну а вот и тело программы:
+ 
+ 
+;ОБРАБОТКА АППАРАТНЫХ CMOS ЧАСОВ
+;WRITEN BY (C)Pantera 2001
+;V2.1
+;УСТАНОВКА РЕГИСТРОВ МИКРОСХЕМЫ
+;В H,АДРЕС  В L,ЗНАЧЕНИЕ
+;Ячейки в которые заносятся значения:
+ 
+;#00-СЕКУНДЫ
+;#02-МИНУТЫ
+;#04-ЧАСЫ
+;#06-ДЕНЬ НЕДЕЛИ
+;#07-ЧИСЛО
+;#08-МЕСЯЦ
+;#09-ГОД
+ 
+;Теперь о контрольных байтах cmos,которые
+;заносятся в ячейки #11,#0A,#0B перед ра-
+;ботой cmos.
+ 
+;#11-#AA БАЙТ НАЛИЧИЯ ЧАСОВ.ОБЯЗАТЕЛЬНО!!
+;        ИСПОЛЬЗУЕТСЯ ДЛЯ ОБНАРУЖЕНИЯ ЧА-
+;        СОВ В СИСТЕМЕ, ПРОГРАММАМИ.
+;#0А-32  ОБЯЗАТЕЛЬНО ЗАНЕСТИ ЭТО ЗНАЧЕНИЕ
+;#0B-2   ОБЯЗАТЕЛЬНО ЗАНЕСТИ ЭТО ЗНАЧЕНИЕ
+ 
+ 
+ 
+       ORG #8000
+       JP CHECK
+ 
+;----------------------------------------
+R_SEL  DEFW #EFF7     ;РЕГИСТР УПРАВЛЕНИЯ
+R_DATA DEFW #BFF7     ;РЕГИСТР ДАННЫХ
+R_ADRS DEFW #DFF7     ;РЕГИСТР АДРЕСА
+ON     DEFB #80       ;МАСКА ВКЛЮЧЕНИЯ
+OFF    DEFB #00       ;МАСКА ВЫКЛЮЧЕНИЯ
+;----------------------------------------
+ 
+;-------ПРОВЕРКА НАЛИЧИЯ CMOS------------
+ 
+CHECK  CALL OPEN      ;ОТКРЫВАЕМ     CMOS
+       LD H,#11       ;ПИШЕМ В #11 ЯЧЕЙКУ
+       LD BC,(R_ADRS)
+       OUT (C),H
+       LD L,#AA       ;#AA В  ЯЧЕЙКЕ  #11
+       LD BC,(R_DATA) ;ДЛЯ       ПРОВЕРКИ
+       OUT (C),L      ;НАЛИЧИЯ    МИКРУХИ
+ 
+;---------ПРОЦЕДУРА ЧТЕНИЯ ИЗ ПОРТА------
+ 
+       LD H,#11       ;ОТКРЫВАЕМ   ЯЧЕЙКУ
+       LD BC,(R_ADRS)  ЗАПИСЫВАЕМ  ЗНАЧЕ-
+       OUT (C),H      ;НИЕ В РЕГ.  АДРЕСА
+       LD BC,(R_DATA) ;ЧИТАЕМ ИЗ РЕГИСТРА
+       IN A,(C)       ;ДАННЫХ  ЧИСЛО  #AA
+       CP #AA         ;СРАВНИВАЕМ
+       PUSH AF
+       CALL CLOSE
+       POP AF
+       JR Z,CMOS
+       RET            ;НЕТ ЧАСОВ
+ 
+CMOS   CALL OPEN
+       LD HL,#0A20    ;В ЯЧЕЙКУ #0А НУЖНО
+       CALL W_CMOS    ;ЗАНЕСТИ #20!!!
+       LD HL,#0B02    ;В ЯЧЕЙКУ #0B НУЖНО
+       CALL W_CMOS    ;ЗАНЕСТИ #02!!!
+       CALL CLOSE
+       LD A,7         ;ЕСЛИ ЕСТЬ  ЧАСЫ ТО
+       OUT (#FE),A    ;БОРДЕР БУДЕТ БЕЛЫМ
+       RET
+ 
+;---ПРОЦЕДУРА ОТКРЫТИЯ ДОСТУПА К CMOS----
+ 
+OPEN   LD BC,(R_SEL)  ;ОТКРЫВАЕМ    CMOS
+       LD A,(ON)      ;УСТАНОВКОЙ БИТА 7
+       OUT (C),A      ;
+       RET
+ 
+;---ПРОЦЕДУРА ЗАКРЫТИЯ ДОСТУПА К CMOS---
+ 
+CLOSE  LD A,(OFF)     ;ВСЕ ОТРУБАЕМСЯ
+       LD BC,(R_SEL)
+       OUT (C),A
+       RET
+ 
+;---ПОДПРОГРАММА ДЛЯ ЗАПИСИ ЗНАЧЕНИЙ В CMOS-ЧАСЫ-------------
+;ЗАПИСЬ ЧЕРЕЗ РЕГИСТР HL, В H-ЯЧЕЙКА, В L-ЗНЧЕНИЕ
+ 
+W_CMOS LD BC,(R_ADRS)
+       OUT (C),H
+       LD BC,(R_DATA)
+       OUT (C),L
+       RET
+ 
+ 
+Это процедура тикания часов:
+ 
+;исходники взяты из программы Mr.Gluk Reset Service 5.3k
+ 
+;ВЫВОД ВРЕМЕНИ И ДАТЫ НА ЭКРАН
+ 
+M1     CALL CMOS_R
+       JP M1
+ 
+ 
+CMOS_R EXX
+       CALL CMOS_3
+       LD HL,10072
+       EXX
+       RET
+CMOS_3 LD HL,#5815
+       CALL LLAF63
+       LD DE,#4015
+       LD H,#0B
+       CALL LLAF2B
+       BIT 5,A
+       JR Z,LLADB9
+       LD A,#0C
+       CALL LLAE45
+       LD A,#0B
+       CALL LLAE45
+       LD A,#0B
+       CALL LLAE45
+       DEC E
+       DEC E
+       DEC E
+LLADB9 INC E
+       INC E
+       INC E
+       LD H,#04
+       CALL LLAE19
+       CALL LLAE1E
+       LD H,#02
+       CALL LLAE19
+       CALL LLAE1E
+       LD H,#00
+       CALL LLAE19
+       LD HL,#5835
+       CALL LLAF63
+       LD H,#06
+       CALL LLAF2B
+       LD DE,#4035
+       JR C,LLADF8
+       DEC A
+       LD HL,LLAEE3
+       ADD A,A
+       ADD A,L
+       LD L,A
+       JR NC,LLADEB
+       INC H
+LLADEB LD A,(HL)
+       INC HL
+       PUSH AF
+       LD A,(HL)
+       CALL LLAE45
+       POP AF
+       CALL LLAE45
+       DEC E
+       DEC E
+LLADF8 INC E
+       INC E
+       LD A,#0B
+       CALL LLAE45
+       LD H,#07
+       CALL LLAE19
+       LD A,#0D
+       CALL LLAE45
+       LD H,#08
+       CALL LLAE19
+       LD A,#0D
+       CALL LLAE45
+       LD H,#09
+       CALL LLAE19
+       RET
+LLAE19 CALL LLAF2B
+       JR LLAE32
+LLAE1E LD H,#00
+       CALL LLAF2B
+       RRCA
+       LD A,#0A
+       JR NC,LLAE2C
+LLAE28 CALL LLAE45
+       RET
+LLAE2C INC A
+       JR LLAE28
+LLAE2F INC DE
+       INC DE
+       RET
+LLAE32 JR C,LLAE2F
+       PUSH AF
+       RRCA
+       RRCA
+       RRCA
+       RRCA
+       AND #0F
+       CALL LLAE45
+       POP AF
+       AND #0F
+       CALL LLAE45
+       RET
+LLAE45 PUSH DE
+       LD DE,LLAE63
+       ADD A,A
+       LD L,A
+       ADD A,A
+       ADD A,L
+       LD L,A
+       LD H,#00
+       ADD HL,DE
+       POP DE
+       LD B,#06
+       LD C,D
+       XOR A
+       LD (DE),A
+       INC D
+LLAE58 LD A,(HL)
+       LD (DE),A
+       INC HL
+       INC D
+       DJNZ LLAE58
+       XOR A
+       LD (DE),A
+       LD D,C
+       INC E
+       RET
+LLAE63 LD A,A
+       LD H,E
+       LD H,E
+       LD H,E
+       LD H,E
+       LD A,A
+       JR LLAE83
+       JR LLAE85
+       JR LLAE87
+       LD A,A
+       INC BC
+       LD A,A
+       LD H,B
+       LD H,B
+       LD A,A
+       LD A,A
+       INC BC
+       RRCA
+       INC BC
+       INC BC
+       LD A,A
+       LD H,E
+       LD H,E
+       LD H,E
+       LD A,A
+       INC BC
+       INC BC
+       LD A,A
+       LD H,B
+LLAE83 LD A,A
+       INC BC
+LLAE85 INC BC
+       LD A,A
+LLAE87 LD A,A
+       LD H,B
+       LD A,A
+       LD H,E
+       LD H,E
+       LD A,A
+       LD A,(HL)
+       LD B,#06
+       LD B,#06
+       LD B,#7F
+       LD H,E
+       LD A,A
+       LD H,E
+       LD H,E
+       LD A,A
+       LD A,A
+       LD H,E
+       LD H,E
+       LD A,A
+       INC BC
+       LD A,A
+       INC E
+       INC E
+       NOP
+       NOP
+       INC E
+       INC E
+       NOP
+       NOP
+       NOP
+       NOP
+       NOP
+       NOP
+       LD A,(HL)
+       ADD A,C
+       SBC A,A
+       SUB C
+       ADD A,C
+       LD A,(HL)
+       NOP
+       NOP
+       NOP
+       INC E
+       INC E
+       INC E
+       NOP
+       NOP
+       LD A,(HL)
+       LD B,D
+       LD B,D
+       LD B,D
+       NOP
+       NOP
+LLAEBF LD B,D
+       LD A,(HL)
+       LD B,D
+       LD B,D
+       NOP
+       NOP
+       LD (HL),B
+       LD A,(HL)
+       LD B,D
+       LD A,(HL)
+       NOP
+       NOP
+       LD A,#08
+       EX AF,AF'
+       EX AF,AF'
+       NOP
+       NOP
+       LD A,(HL)
+       LD B,B
+       LD B,B
+       LD A,(HL)
+       NOP
+       NOP
+       LD A,H
+       LD B,H
+       LD A,H
+       LD B,B
+       NOP
+       INC A
+       LD B,B
+       LD A,H
+       LD B,D
+       LD A,H
+       LD (DE),A
+       DJNZ LLAEF3
+LLAEE3 EQU $-#01
+       LD C,#11
+       DJNZ LLAEFB
+       LD (DE),A
+       LD DE,#1104
+       LD C,#14
+       LD (DE),A
+       LD (DE),A
+       DJNZ LLAEBF
+       INC B
+LLAEF3 XOR A
+       LD A,H
+       LD BC,(R_ADRS)
+       OUT (C),A
+       LD A,L
+LLAEFB LD BC,(R_DATA)
+       OUT (C),A
+       CALL LLAF0D
+       RET
+LLAF04 LD BC,(R_SEL)
+       LD A,(ON)
+       DI
+       OUT (C),A
+       RET
+LLAF0D LD BC,(R_SEL)
+       LD A,(OFF)
+       EI
+       OUT (C),A
+       RET
+LLAF16 CALL LLAF04
+       LD A,H
+       LD BC,(R_ADRS)
+       OUT (C),A
+       LD BC,(R_DATA)
+       IN A,(C)
+       LD H,A
+       CALL LLAF0D
+       LD A,H
+       AND A
+       RET
+LLAF2B CALL LLAF04
+       LD A,#0A
+       LD BC,(R_ADRS)
+       OUT (C),A
+       LD BC,(R_DATA)
+       IN A,(C)
+       RLA
+       JR C,LLAF5E
+       CALL LLAF16
+       LD H,A
+       LD A,#00
+       AND A
+       JR Z,LLAF5B
+       LD A,H
+       LD C,#FF
+LLAF49 INC C
+       SUB #0A
+       JR NC,LLAF49
+       ADD A,#0A
+       RLC C
+       RLC C
+       RLC C
+       RLC C
+       OR C
+       AND A
+       RET
+LLAF5B LD A,H
+       AND A
+       RET
+LLAF5E CALL LLAF0D
+       SCF
+       RET
+LLAF63 LD D,H
+       LD E,L
+       INC E
+       LD BC,#000A
+       LD (HL),#61    ;байт атрибутов
+       LDIR
+       RET
+ 
+ 
+Вот еще и резидент для часов:
+ 
+ 
+;РЕЗИДЕНТ CMOS ЧАСОВ ДЛЯ IS-DOS
+ 
+       ORG #C350
+MEM0   EQU $-1
+       DEFW INIT
+       DEFW #0000
+ 
+       LD A,#FF
+MEM1   EQU $
+       LD HL,MEM3
+       LD C,#1E
+       RST #10
+       RET
+ 
+INIT   INC A
+       RET Z
+       INC A
+       RET NZ
+MEM2   EQU $
+       LD HL,MEM3
+       LD C,#1E
+       RST #10
+       RET
+ 
+       DEFW #0000
+ 
+MEM3   EQU $
+LLC36A LD A,(LLC44D)
+       ADD A,#10
+MEM4   EQU $
+       LD (LLC44D),A
+       RET NC
+       DI
+       LD BC,#EFF7
+       LD A,#80
+       OUT (C),A
+LLC373 LD A,#0A
+MEM5   EQU $
+       CALL LLC444
+       RLCA
+       JR C,LLC373
+       LD A,#07
+MEM6   EQU $
+       CALL LLC444
+       LD E,A
+       LD A,#08
+MEM7   EQU $
+       CALL LLC444
+       AND #0F
+       RRCA
+       RRCA
+       RRCA
+       LD D,A
+       AND #E0
+       OR E
+       LD E,A
+       LD A,#01
+       AND D
+       LD D,A
+       LD A,#09
+MEM8   EQU $
+       CALL LLC444
+       SLA A
+       OR D
+       LD D,A
+       PUSH DE
+       LD A,#00
+MEM9   EQU $
+       CALL LLC444
+       RR A
+       PUSH AF
+       LD A,#02
+MEM10  EQU $
+       CALL LLC444
+       LD E,A
+       LD D,#00
+       PUSH DE
+       LD A,#04
+MEM11  EQU $
+       CALL LLC444
+       LD E,A
+       LD A,#02
+       AND A
+       PUSH AF
+MEM12  EQU $
+       LD HL,LLC44E
+       LD BC,#107C
+       RST #10
+       POP AF
+       POP DE
+MEM13  EQU $
+       LD HL,LLC451
+       RST #10
+MEM14  EQU $
+       LD HL,LLC44D
+       LD B,#04
+       LD A,#20
+LLC3D4 INC HL
+       CP (HL)
+       JR NZ,LLC3DA
+       LD (HL),#30
+LLC3DA DJNZ LLC3D4
+       DEC HL
+       POP AF
+       LD A,#3A
+       JR C,LLC3E4
+       AND #20
+LLC3E4 LD (HL),A
+       LD C,#45
+       RST #10
+       EXX
+       DEC HL
+       DEC HL
+       POP DE
+       LD (HL),D
+       DEC HL
+       LD (HL),E
+       LD B,#05
+MEM15  EQU $
+       LD HL,LLC44E
+       LD DE,#401B
+LLC3F7 PUSH BC
+       PUSH HL
+       PUSH DE
+       LD L,(HL)
+       LD H,#00
+       ADD HL,HL
+       ADD HL,HL
+       ADD HL,HL
+       LD BC,#3C00
+       ADD HL,BC
+       EX DE,HL
+       LD B,#08
+       POP HL
+       PUSH HL
+LLC409 PUSH BC
+       LD A,(DE)
+       LD (HL),A
+       LD BC,#0100
+       ADD HL,BC
+       INC DE
+       POP BC
+       DJNZ LLC409
+       POP DE
+       POP HL
+       POP BC
+       INC HL
+       INC DE
+       DJNZ LLC3F7
+       LD BC,#EFF7
+       XOR A
+       OUT (C),A
+       EI
+       RET
+LLC444 LD BC,#DFF7
+       OUT (C),A
+       LD B,#BF
+       IN A,(C)
+       RET
+LLC44D DEFB #00
+LLC44E DEFM "## ##"
+LLC451 EQU $-2
+       DEFB #FF,#FF
+       DEFW MEM0,MEM1,MEM2,MEM3
+       DEFW MEM4,MEM5,MEM6,MEM7
+       DEFW MEM8,MEM9,MEM10,MEM11
+       DEFW MEM12,MEM13,MEM14,MEM15
+ 
+ 
+В приложении находится установщик рези-
+дента вместе с резидентом часов.
+

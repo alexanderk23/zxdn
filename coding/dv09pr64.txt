@@ -1,0 +1,208 @@
+Из журнала Deja Vu #09, Кемерово, 1999
+
+
+
+(C) Морозов Илья/Death Moroz
+__________________________________________
+
+             Всем привет  !!!
+
+   Сегодня  "поговорим" о  быстром  выводе
+строки  с 64 символами. Весь секрет  ниже-
+приведенного метода в паре  таблиц, допол-
+нительном фонте  и  нестандартной  печати:
+символы выводятся  сразу по 2 (в одно зна-
+коместо), что вместе со стековым скроллин-
+гом дает потрясяющие результаты.
+
+;(C) All work in Xas by D.M0R0Zz
+
+font2         EQU    #6000 ;адрес 2-ого фонта(создается ниже)
+t2            EQU    font2+2048 ;адреса таблиц
+t1            EQU    t2+512 ;с адресами символов
+
+              ORG    t1+512 ;грузим базовый фонт(должен быть
+font1         EQU    $ ;сдвинут вверх(выводятся только 6 байт)
+              LCODE  "F4.1"
+              ORG    font1+2048 ;начало программы
+              ENT
+              CALL   creat ;создаем все, что надо...
+              LD     de,text ;в DE адрес текста
+              CALL   print ;печать...
+oprs          CALL   8020; при нажатии "ЗАБОЙ" - выход...
+              JR     c,oprs
+              RET
+
+print         LD     hl,#4000 ;откуда начинаем печать
+              LD     (t_poz+1),hl
+              LD     a,0 ;номер этой линии
+              LD     (n_lin+1),a
+              DI
+              LD     (sp_+1),sp ;сохранились
+              LD     hl,p1 ;начальные установки
+              LD     bc,#2120
+
+p1            LD     a,(DE) ;взяли код символа
+              INC    de ;увеличили
+              CP     b ;если этот код > 32 (пробел),
+              JP     nc,p1_1 ;то переходим на печать
+              CP     c ;если это НЕ пробел,
+              JP     nz,p1_3 ;то идем на p1_3
+              EXX
+              LD     de,32*8+font1 ;в DE' адрес пробела
+              EXX
+              JP     p2 ;переход на 2-ую половинку знакоместа
+
+p1_3          CP     #0d ;признак конца линии ?
+              JP     z,n_lin ;если да, то ползем на след.
+              CP     3 ;конец текста ?
+              JP     z,sp_ ;если да, то на выход
+
+p1_1          EXX    ;берем адрес символа из таблицы
+              LD     l,A ;и запоминаем его в DE'
+              LD     h,t1&h ;взят старший байт
+              LD     e,(HL)
+              INC    h
+              LD     d,(HL)
+              EXX
+
+p2            LD     a,(DE) ;взяли следующго символа
+              INC    de
+              CP     b ;если > 32, то печать
+              JP     nc,p2_2
+              CP     c
+              JP     nz,p2_3
+              EXX    ;в SP адрес пробела во 2-ом фонте
+              LD     sp,32*8+font2
+              JP     t_poz
+p2_3          CP     #0d ;если конец строки, то переход на
+              JP     z,n_lin_ ;печать 1-ой половинки
+              CP     3
+              JP     z,sp_
+
+p2_2          EXX    ;берем адрес в фонте
+              LD     l,A
+              LD     h,t2&h
+              LD     a,(HL)
+              INC    h
+              LD     h,(HL)
+              LD     l,A
+              LD     sp,HL ;пихаем в SP
+
+t_poz         LD     bc,ш4000 ;адрес в экране
+              !ASSM  2 ;повторяем кусок до !cont 2 раза
+;(заменить на 3, если нужно выводить символы полностью)
+              POP    hl ;взяли 2 байта из 2-ого фонта
+              LD     a,(DE) ;и один из первого...
+              OR     l ;слили
+              LD     (bc),A ;напечатали
+              INC    е ;перешли ко 2-ому байту 1-ого фонта
+              INC    b ;и на линию вниз
+              LD     a,(DE)
+              OR     h
+              LD     (bc),A
+              INC    b
+              INC    e
+              !CONT
+              POP    hl ;допечатали остатки
+              LD     a,(DE)
+              OR     l
+              LD     (bc),A
+              INC    b
+              INC    e
+              LD     a,(DE)
+              OR     h
+              LD     (bc),A
+
+              LD     hl,t_poz+1 ;увеличили позицию
+              INC    (hl)
+              EXX
+              JP     (hl) ;повторяем
+n_lin_        EXX    ;вывод только 1-ой половинки знакоместа
+              LD     l,E
+              LD     h,D
+              LD     sp,HL
+              LD     hl,(t_poz+1)
+              !ASSM  2
+              POP    de
+              LD     (hl),E
+              INC    h
+              LD     (hl),D
+              INC    h
+              !CONT
+              POP    de
+              LD     (hl),E
+              INC    h
+              LD     (hl),D
+              EXX
+
+n_lin         LD     a,0 ;переход на след.линию
+              CP     23 ;или выход, если конец экрана
+              JP     z,sp_
+n_lin1        EXX
+              LD     l,A
+              INC    a
+              LD     (n_lin+1),a
+              LD     b,A
+              AND    #18
+              ADD    a,#40
+              LD     h,A
+              LD     a,B
+              AND    7
+              RRCA
+              RRCA
+              RRCA
+              LD     l,A
+              LD     (t_poz+1),hl
+              LD     bc,t1
+              EXX
+              JP     (hl)
+sp_           LD     sp,0 ;выход
+              EI
+              RET
+
+creat
+              LD     bc,2048 ;создание 2-ого, заранее
+              LD     de,font1 ;сдвинутого фонта
+              LD     hl,font2
+cr2           LD     a,(DE)
+              RRCA
+              RRCA
+              RRCA
+              RRCA
+              LD     (hl),A
+              INC    de
+              INC    hl
+              DEC    bc
+              LD     a,B
+              OR     c
+              JR     nz,cr2
+
+              LD     b,0 ;создание таблиц
+              LD     de,8
+              LD     hl,font1
+              LD     ix,t1
+              LD     iy,t2
+              EXX
+              LD     hl,font2
+              LD     de,8
+              EXX
+cr1           LD     (ix),l ;для быстрого доступа, 1-ая часть
+              INC    hx ;хранит младюий, а 2-ая часть таблицы
+              LD     (ix),h ;старший байт адреса
+              DEC    hx
+              INC    ix
+              ADD    hl,DE
+              EXX
+              LD     (iy),l
+              INC    hy
+              LD     (iy),h
+              DEC    hy
+              INC    iy
+              ADD    hl,DE
+              EXX
+              DJNZ   cr1
+              RET
+              ORG    $
+text          EQU    $ ;грузим текст
+              LCODE  "TEXT"

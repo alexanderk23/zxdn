@@ -1,0 +1,169 @@
+Из газеты Krasnodar News #10, 21.08.99
+
+
+
+-----------------------------------------
+                CODING...
+-----------------------------------------
+
+
+(c) Viper/Tchno Lab'99
+
+           Intro в 256 байт?
+
+  В связи с номинацией 512 intro в CC999
+у  некоторых возник вопрос - возможно ли
+написать интро в 256 байт? Ответ прост -
+не  только  возможно,  но и данная цифра
+легко перекрывается. Примером может пос-
+лужить  Screen Saver для KrNews, которой
+вы  могли наблюдать в течение нескольких
+номеров подряд. Причина такого постоянс-
+тва  - малый объем памяти, требуемый для
+его работы. Он занимает всего 153 байта!
+А если убрать опрос клавиатуры (нормаль-
+ный  Screen  Saver  ;), то 145 байт, что
+приближает его уже к пределу 128 байт. И
+это  при  том, что он активно использует
+стек для своей работы. Данный Screen Sa-
+ver  -  это  полноэкранная  (fullscreen)
+программа,  не  требующая 128'ой памяти.
+Необходима только таблица адресов экран-
+ной  памяти,  располагающаяся  с ровного
+адреса, в данном варианте #C000. Естест-
+венно, все realtime и ничего не режется.
+  Весь  этот  SS  написан году так в 96,
+если не раньше, так что не обессудьте.
+
+
+  Если кто не знает:
+
+      REPT 16
+      PUSH HL
+      ENDR
+
+  - директивы Zx Asm3.10, соответсвуют
+
+      DUP 16
+      PUSH HL ; в Alasm'е
+      EDUP
+
+.16          PUSH HL ;- в Storm'е
+
+ - то бишь повторение PUSH 16 раз подряд
+
+  Итак:
+
+
+BEG     EQU 7     ;min- расстояние между
+ENX     EQU 63    ;max- линиями
+GTAB    EQU #C000 ;адрес таблицы
+
+        ORG #8000
+
+
+FLIC    LD DE,#401F ;построение
+        LD HL,GTAB  ;таблицы
+        LD B,H
+FLI     INC DE
+        LD (HL),E
+        INC L
+        LD (HL),D
+        INC HL
+        DEC DE
+
+        INC D       ;стандартный даун
+        LD A,D
+        AND 7
+        JR NZ,FL1
+        LD A,E
+        SUB #E0
+        LD E,A
+        JR NC,FL1
+        LD A,D
+        SUB 8
+        LD D,A
+
+FL1     DJNZ FLI
+
+        EI
+        LD DE,GTAB
+        EXX
+        LD E,96     ;пол-экрана
+
+SFX     LD B,BEG
+CYCLE1  LD HL,#F    ;страшное число
+        CALL CYC2
+        HALT
+        INC HL      ;инверсия однако :)
+        CALL CYC2
+        INC B
+        LD A,B
+        CP ENX
+        JR C,CYCLE1
+
+CYCLE2  DEC HL      ;back to the Universe
+        CALL CYC2
+        HALT
+        INC HL
+        CALL CYC2
+        DEC B
+        LD A,B
+        CP BEG
+        JR NC,CYCLE2
+        JR SFX
+
+CYC2    LD (OLDSP+1),SP
+        LD A,B
+        SRL A
+CYC21   LD C,A
+        ADD A,E   ;прибавили 96 для
+                  ;середины экрана
+
+        EXX
+        LD H,E    ;в E - 0
+        LD L,A
+        ADD HL,HL ;умножение на 2
+ 
+        ADD HL,DE ;адрес, в котором на-
+                  ;ходится экранный ад-
+                  ;рес (ну и сказал)
+        LD SP,HL  ;в стекпойнт его
+        POP HL    ;экранный адрес
+        LD SP,HL  ;снова в стекпойнт
+
+        EXX
+        REPT 16
+        PUSH HL   ;длинная линия
+        ENDR
+
+        SUB C     ;или LD A,E - без
+        SUB C     ;    SUB C    разницы
+
+        EXX
+        LD H,E    ;симметрия все-таки
+        LD L,A
+        ADD HL,HL
+        ADD HL,DE
+        LD SP,HL
+        POP HL
+        LD SP,HL
+        EXX
+
+        REPT 16
+        PUSH HL
+        ENDR
+
+        LD A,C
+        ADD A,B
+        CP E        ;за экран
+        JP C,CYC21  ;не вылазит?
+
+OLDSP   LD SP,0          ;а что в стеке?
+        SUB A
+        IN A,(#FE)  ;не трогай
+        CPL         ;клавиши!
+        AND #1F
+        RET Z
+        POP HL
+        RET

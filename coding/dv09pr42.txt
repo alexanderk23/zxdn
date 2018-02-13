@@ -1,0 +1,571 @@
+Из журнала Deja Vu #09, Кемерово, 1999
+
+
+
+(С) D.M0r0Zz
+__________________________________________
+
+   Всем привет! Тема сегодняшней  програм-
+мы: быстрая печать  42-х  символов в стро-
+ке, атрибуты в этом же режиме,старые песни
+о scroll'е и быстрый вывод спрайта  с точ-
+ностью до пикселя (stack free). Поехали!
+
+1.  Быстрая печать 42-х символов в строке.
+
+   Итак, для начала необходимо сотворить 3
+дополнительных фонта, причем,каждый из них
+будет в 2 раза больше исходного (4096 байт
+каждый), плюс ко всему прочему, за  каждым
+из фонтов будет следовать табличка для ад-
+ресов его символов (512 байт). Этим факин-
+гом занимается подпрога под названием CRE-
+AТ. Ее необходимо call'нуть в самом  нача-
+ле, а затем можно безбоязненно пользовать-
+ся PRINT, подробнее о котором далее.
+   Предупреждение: ни одна из меток не не-
+сет абсолютно никакой смысловой нагрузки;)
+
+
+FONT    EQU     АДРЕС БАЗОВОГО ФОНТА
+FONT2   EQU     49152
+FONT3   EQU     FONT2+4096+512
+FONT4   EQU     FONT3+4096+512
+
+CREAT
+        LD      DE,FONT2
+        LD      HL,FONT
+        LD      BC,2048
+F_CR1   LD      A,(HL)
+        RLCA
+        RLCA
+        AND     3
+        LD      (DE),A
+        INC     DE
+        LD      A,(HL)
+        RLCA
+        RLCA
+        AND     252
+        LD      (DE),A
+        INC     DE
+        INC     HL
+        DEC     BC
+        LD      A,B
+        OR      C
+        JR      NZ,F_CR1
+        LD      B,0
+        LD      IX,FONT2+4096
+        LD      HL,FONT2
+        LD      DE,16
+F_CR11  LD      (IX),L
+        INC     IX
+        LD      (IX),H
+        INC     IX
+        ADD     HL,DE
+        DJNZ    F_CR11
+
+        LD      HL,FONT
+        LD      DE,FONT3
+        LD      BC,2048
+F_CR2   LD      A,(HL)
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        AND     15
+        LD      (DE),A
+        INC     DE
+        LD      A,(HL)
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        AND     240
+        LD      (DE),A
+        INC     DE
+        INC     HL
+        DEC     BC
+        LD      A,B
+        OR      C
+        JR      NZ,F_CR2
+        LD      B,0
+        LD      IX,FONT3+4096
+        LD      HL,FONT3
+        LD      DE,16
+F_CR21  LD      (IX),L
+        INC     IX
+        LD      (IX),H
+        INC     IX
+        ADD     HL,DE
+        DJNZ    F_CR21
+
+        LD      BC,2048
+        LD      HL,FONT
+        LD      DE,FONT4
+F_CR3   LD      A,(HL)
+        RRCA
+        RRCA
+        AND     63
+        LD      (DE),A
+        INC     DE
+        LD      A,(HL)
+        RRCA
+        RRCA
+        AND     128+64
+        LD      (DE),A
+        INC     DE
+        INC     HL
+        DEC     BC
+        LD      A,B
+        OR      C
+        JR      NZ,F_CR3
+        LD      B,0
+        LD      IX,FONT4+4096
+        LD      HL,FONT4
+        LD      DE,16
+F_CR31  LD      (IX),L
+        INC     IX
+        LD      (IX),H
+        INC     IX
+        ADD     HL,DE
+        DJNZ    F_CR31
+        RET
+
+   Ну вот,теперь можно и что-нибудь пропе-
+чатать: адрес текста в HL и смело вызывать
+PRINT (экран должен быть очишен),смысл ко-
+торой в том, что для каждого смещения сим-
+вола в знакоместе существует свой фонт, IY
+хранит  адрес  перехода  на вывод с нужным
+смещением. С целью экономии времени адреса
+"смещенных  фонтов"  берутся из ранее соз-
+данных таблиц, кому не лень, могут сделать
+таблицу и для стандартного фонта.
+
+
+PRINT   XOR     A
+        LD      (Y_POZ_+1),A
+        LD      DE,#4000
+        LD      (S_TBL_+1),DE
+
+        LD      (SP_I+1),SP
+        LD      IX,O1_
+        LD      IY,FUCK1_
+;^ установка стартовой конфигурации.
+
+O1_     LD      A,(HL)
+        CP      33
+        JP      NC,O4_
+        CP      32
+        JP      NZ,O9_
+;
+;если  пробел,то сразу переходим к следую-
+;щему символу
+;
+        INC     HL
+        EX      DE,HL
+        LD      A,LY
+        CP      FUCK1_&L
+        JP      Z,O11_
+        LD      HL,S_TBL_+1
+        INC     (HL)
+O11_    LD      A,LY
+        CP      FUCK1_&L
+        LD      IY,FUCK2_
+        JP      Z,O111_
+        CP      FUCK2_&L
+        LD      IY,FUCK3_
+        JP      Z,O111_
+        CP      FUCK3_&L
+        LD      IY,FUCK4_
+        JP      Z,O111_
+        LD      IY,FUCK1_
+O111_   EX      DE,HL
+        JP      (IX)
+;
+;конструкция   типа  METKA&L  означает,что
+;взят младший байт адреса METKA.
+;
+O9_     CP      #0D;переход на след.строку
+        JP      Z,Y_POZ_
+        CP      3;конец текста
+        JP      Z,SP_I
+        INC     HL
+        CP      #10;признак атрибутов
+        JR      NZ,O1_
+        INC     HL
+        JP      (IX)
+
+O4_     INC     HL
+        EXX
+        LD      L,A
+        LD      H,0
+S_TBL_  LD      DE,0
+        JP      (IY)
+;
+;смещение 2 бита от начала знакоместа
+;
+FUCK4_  LD      IY,FUCK1_
+        LD      BC,FONT4+4096
+        JP      FUCK0_
+;
+;смещение 4 бита от начала знакометса
+;
+FUCK3_  LD      IY,FUCK4_
+        LD      BC,FONT3+4096
+        JP      FUCK0_
+;
+;смещение 6 бит от начала знакоместа
+;
+FUCK2_  LD      IY,FUCK3_
+        LD      BC,FONT2+4096
+FUCK0_  ADD     HL,HL
+        ADD     HL,BC
+        LD      SP,HL
+        POP     HL
+        LD      SP,HL
+        EX      DE,HL
+        POP     DE
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),D
+        DEC     L
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        POP     DE
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),D
+        DEC     L
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        POP     DE
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),D
+        DEC     L
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        POP     DE
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),D
+        DEC     L
+        LD      A,E
+        OR      (HL)
+        LD      (HL),A
+        LD      HL,S_TBL_+1
+        INC     (HL)
+        EXX
+        JP      (IX)
+;
+;вывод символа без смещения
+;
+FUCK1_  ADD     HL,HL
+        ADD     HL,HL
+        ADD     HL,HL
+        LD      BC,FONT
+        ADD     HL,BC
+        LD      SP,HL
+        EX      DE,HL
+        POP     DE
+        LD      (HL),E
+        INC     H
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),E
+        INC     H
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),E
+        INC     H
+        LD      (HL),D
+        INC     H
+        POP     DE
+        LD      (HL),E
+        INC     H
+        LD      (HL),D
+        LD      IY,FUCK2_
+        EXX
+        JP      (IX)
+;
+;Вычисление адреса след.линии.Стандартно.
+;
+Y_POZ_  LD      A,0
+        CP      23
+        JP      Z,SP_I
+        INC     A
+        LD      (Y_POZ_+1),A
+        EX      DE,HL
+        LD      B,A
+        AND     #18
+        ADD     A,#40
+        LD      H,A
+        LD      A,B
+        AND     7
+        RRCA
+        RRCA
+        RRCA
+        LD      L,A
+        LD      (S_TBL_+1),HL
+        EX      DE,HL
+        INC     HL
+        LD      IY,FUCK1_
+        JP      (IX)
+SP_I    LD      SP,0
+        RET
+
+2.  Установка атрибутов на экране со шриф-
+    том в 42 символа в строке.
+
+         LD      DE,#5800
+         LD      BC,TEXT_ADRES;
+         LD      A,68;атрибут по умолчанию
+         LD      (A_CC+1),A
+A_S0     LD      HL,A_TABLE
+A_S1     LD      A,(BC)
+         INC     BC
+         CP      32
+         JR      NC,A_K
+         CP      3;КОД КОНЦА ТЕКСТА
+         RET     Z
+         CP      #0D;КОД КОНЦА СТРОКИ
+         JR      Z,A_N
+         CP      #10;КОД АТРИБУТА
+         JR      Z,A_C
+A_K      LD      A,E
+         EX      AF,AF
+         LD      A,E
+         ADD     A,(HL)
+         LD      E,A
+A_CC     LD      A,0
+         LD      (DE),A
+         EX      AF,AF
+         LD      E,A
+         INC     HL
+         JR      A_S1
+A_C      LD      A,(BC)
+         LD      (A_CC+1),A
+         INC     BC
+         JR      A_S1
+A_N      LD      A,E
+         EX      AF,AF
+         LD      A,E
+         ADD     A,(HL)
+         LD      E,A
+         LD      A,(A_CC+1)
+         LD      (DE),A
+         EX      AF,AF
+         LD      E,A
+         LD      HL,#20
+         ADD     HL,DE
+         EX      DE,HL
+         LD      A,D
+         CP      #5B
+         JR      C,A_S0
+         RET
+A_TABLE  DB      0,0,1,2,3,3,4,5,6,6,7
+         DB      8,9,9,10,11,12,12,13,14
+         DB      15,15,16,17,18,18,19,20
+         DB      21,21,22,23,24,24,25,26
+         DB      27,27,28,29,30,30,31,31
+
+   Данная процедура  создает себе подобную
+для сдвига экрана вниз на 1 знакоместо.
+
+ADRES    EQU  #4000;АДРЕС,С КОТОРОГО БУДЕМ
+;                   СДВИГАТЬ
+N        EQU     24;ЧИСЛО СКРОЛЛИРУЕМЫХ
+;                   СТРОК
+KUDA     EQU #C000;КУДА ПОМЕЩАЕМ ПРОЦЕДУРУ
+
+         LD      IX,KUDA
+         LD      DE,ADRES+16
+         LD      HL,ADRES+#20
+         LD      B,N*8
+         LD      (IX),#F3;DI
+         INC     IX
+         LD      (IX),#ED
+         INC     IX
+         LD      (IX),#73
+         INC     IX
+         INC     IX
+         INC     IX;LD (NNNN),SP
+CKL1     PUSH    HL,DE
+         CALL    SETS
+         CALL    SETS
+         POP     DE,HL
+         CALL    DN_DE;СТАНДАРТНЫЕ ПРОЦЕ-
+         CALL    DN_HL;ДУРЫ ПО НАХОЖДЕНИЮ
+         DJNZ    CKL1;СЛЕД.ПОЗИЦИИ
+;ДЛЯ ПОЛУЧЕНИЯ БЫСТРОГО СКРОЛЛА АТРИБУТОВ
+;СЛЕДУЕТ СМЕНИТЬ АДРЕСА,УБРАТЬ "*8" ПЕРЕД
+;N  И  ЗАМЕНИТЬ "КАЛЫ" НА НАХОЖДЕНИЕ СЛЕД.
+;ПОЗИЦИИ В АТРИБУТАХ
+         LD      (IX),#31
+         INC     IX
+         LD      (KUDA+3),IX
+         INC     IX
+         INC     IX
+         LD      (IX+0),#FB;EI
+         LD      (IX+1),#C9;RET
+         RET
+
+SETS     LD      (IX+0),#31
+         LD      (IX+1),L
+         LD      (IX+2),H
+         LD      (IX+3),#F1
+         LD      (IX+4),#C1
+         LD      (IX+5),#D1
+         LD      (IX+6),#E1
+         LD      (IX+7),#D9
+         LD      (IX+8),#C1
+         LD      (IX+9),#D1
+         LD      (IX+10),#E1
+         LD      (IX+11),#DD
+         LD      (IX+12),#E1
+         LD      (IX+13),#31
+         LD      (IX+14),E
+         LD      (IX+15),D
+         LD      (IX+16),#DD
+         LD      (IX+17),#E5
+         LD      (IX+18),#E5
+         LD      (IX+19),#D5
+         LD      (IX+20),#C5
+         LD      (IX+21),#D9
+         LD      (IX+22),#E5
+         LD      (IX+23),#D5
+         LD      (IX+24),#C5
+         LD      (IX+25),#F5
+         PUSH    BC
+         LD      BC,16
+         ADD     HL,BC
+         EX      DE,HL
+         ADD     HL,BC
+         EX      DE,HL
+         LD      BC,26
+         ADD     IX,BC
+         POP     BC
+         RET
+   Аналогично можно получить скролл в  об-
+ратную сторону.
+
+3.  Быстрый вывод  спрайта с  точностью до
+    пикселя.
+
+   Предлагаемый мною  алгоритм  отличается
+от всех ранее опубликованных тем,что перед
+началом работы создаются таблицы(а куда же
+без них) длиной по 256 байт(именно столько
+различных комбинаций битов содержится  в 1
+байте),в таблицах хранятся половинки сдви-
+нутых байтов.
+   Пример создания пары таких  таблиц  для
+печати спрайта со сдвигом в 2 бита от  на-
+чала байта ("ld" free;)).
+
+SM2_1   EQU #C000
+SM2_2   EQU #C100
+;Таблицы должны идти с ровных адресов 1 за
+;другой, для каждогосдвига  потребуется  2
+;таблицы, т.к.байт разбивается на 2 куска.
+        HL,SM2_1
+        DE,SM2_2
+        C,0
+CREAT   A,C
+        SRL A;сдвиг для 1-ой половинки
+        SRL A;вправо на 2 бита
+        (HL),A
+        A,C
+        SLA A;вторая часть будет сдвинута
+        SLA A;на 6 бит влево.
+        SLA A
+        SLA A
+        SLA A
+        SLA A
+        (DE),A
+        INC HL
+        INC DE
+        INC C
+        JR NZ,CREAT
+
+   Подобным образом можно получить и  дру-
+гие  сдвиги. Вообще, совсем  необязательно
+печатать с точностью до пикселя, во многих
+случаях отличные результаты  получаются  и
+при шаге в 2 пикселя.
+
+   Пример  "голой"  печати  горизонтальной
+линии спрайта длиной 2  байта со смещением
+2 бита (bc-адрес в экране, de-в спрайте).
+
+        A,(DE);взяли байт спрайта
+        L,A;в hl получаем местонахождение
+        H,SM2_1&H;смещенного вправо байта
+        A,(HL);взяли...
+        (BC),A;поместили...
+        INC L;след.знакоместо...
+        INC H;перешли к таблице "левых"
+;             сдвигов.
+        A,(HL);взяли...
+        (BC),A;поместили...
+        INC DE;след.байт спрайта
+        DEC H;снова перешли на исходную
+;             таблицу.
+        A,(DE);взяли байт спрайта
+        L,A;и получили сдвинутый вариант
+        A,(BC);аналогично...
+        OR (HL)
+        (BC),A
+        INC H
+        INC C
+        A,(HL)
+        (BC),A
+
+        и т.д.
+
+   Надеюсь, суть вы уловили ;). Как видим,
+довольно приличная скорость даже  без  ис-
+пользования стека.
+
+P.S. Я  уже  несколько раз пытался перейти
+после Xas'a в Аlasm, но то LD  забуду наб-
+рать, то на EDIT нажать,при работе с  дис-
+ком меня тянет ко сну, а вместо "#" упорно
+ставлю точку...
+   Помогите, люди добрые ;).
+
+         ВНИМАНИЕ, ВНИМАНИЕ !!!!!
+
+   Все, кто хочет получить от меня злобный
+наезд и что б его вероломные злодеяния уз-
+нали потом все бедные провинциальные  юсе-
+ры, пишите !!!

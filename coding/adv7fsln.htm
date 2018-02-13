@@ -1,0 +1,616 @@
+<pre>
+Из журнала Adventurer #7, Рыбинск, 1997
+
+
+
+      Веселов Евгений (VEKA/CPU)
+ 
+ 
+
+        Быстрые процедуры линии.
+
+     Представляю  вам две программы рисо-
+вания линии, работающие быстрее, чем рас-
+положенная в ПЗУ.
+     Первая из них - для установки точки,
+вызывает внешнюю подпрограмму, что позво-
+ляет использовать ее для вывода любых об-
+ъектов.
+     Координаты  концов  линии задаются в
+регистрах HL и DE (E и L - x, D и H - y).
+
+LINE    LD     A,H    ;расчет смещений
+        SUB    D
+        JR     NC,LINE1
+        EX     DE,HL    ;линия рисуется снизу вверх
+        NEG           ;смена знака смещения
+LINE1   LD     H,A    ;H=dy=|y2-y1|
+        LD     A,L
+        SUB    E
+        LD     BC,#141C ;INC D [#14], INC E [#1C]
+        JR     NC,LINE2
+        INC    C       ;если x1<x2 то DEC E [#1D]
+        NEG             ;смена знака смещения
+LINE2   CP     H
+        LD     L,A     ;L=dx=|x2-x1|
+        JR     C,LINE3 ;если dx<dy то продолжение
+        LD     L,H     ;замена dx<->dy
+        LD     H,A
+        LD     A,B    ;замена INC D <-> INC/DEC E
+        LD     B,C
+        LD     C,A
+LINE3   LD     A,B     ;модификация кода
+        LD     (LINE5),A
+        LD     A,C
+        LD     (LINE6),A
+        LD     B,H     ;кол-во точек в линии
+        LD     A,H
+        INC    L
+        INC    B
+LINE4   CALL   PLOT    ;установка точки
+LINE5   NOP
+;изменение координаты с большим смещением
+;направление зависит от знака смещения
+        SUB    L
+        JR     NC,LINE7
+LINE6   NOP
+;изменение координаты с меньшим смещением
+        ADD    A,H
+LINE7   DJNZ   LINE4
+        RET
+
+     В  PLOT должны сохраняться следующие
+регистры:  HL,DE,B,A. Координаты задаются
+в регистре DE (E=x, D=y).
+
+     Следующая  программа аналогична пре-
+дыдущей,  но  работает  непосредственно с
+адресом  в  экранном  файле. Также вместо
+самомодифицируещегося  кода  используются
+отдельные  части программы для каждого из
+четырех направлений. За счет этого значи-
+тельно  возрастает  скорость и еще больше
+длина ;-).
+     А откуда берутся четыре направления?
+Посмотрите  строчку  после первого JR.
+Видите EX DE,HL? Теперь  посмотрите на ри-
+сунок.
+</pre>
+<img src=adv7fsln/pic1.gif>
+<pre>
+Если D(y1)>H(y2),то линия должна рисовать-
+ся сверху вниз (линии 5..8 на рисунке), но
+выполняется EX  DE,HL и все линии рисуются
+снизу вверх (как линии 1..4).
+     Все  это относится и к первой проце-
+дуре  линии. Если необходимо, чтобы линия
+всегда шла в заданном направлении, то вам
+придется  переделать начальный блок прог-
+раммы  (расчет  смещений)  или напишите в
+редакцию журнала, и будет опубликован из-
+мененный вариант.
+     Еще  один  важный  момент: во второй
+процедуре  экранный  адрес  расчитывается
+один раз перед выводом линии (см. в четы-
+рех  местах CALL GET_ADR). Координаты за-
+даются в регистре DE,а результаты расчета
+заносятся в регистр HL(адрес) и C(маска),
+при этом можно использовать все регистры.
+Самое  главное,  что начало координат при
+этом  должно находиться внизу экрана (об-
+ратите внимание на вторую и третью строч-
+ки в процедуре GET_ADR).
+
+LINE    LD      A,H
+        SUB     D
+        JR      NC,LINE1
+        EX      DE,HL
+        NEG
+LINE1   LD      H,A
+        LD      A,L
+        SUB     E
+        JR      NC,LINER
+
+        NEG
+        CP      H
+        LD      L,A
+        JR      C,LINELU
+
+        PUSH    HL
+        CALL    GET_ADR
+        POP     DE
+        LD      B,E
+        LD      A,E
+        INC     D
+        INC     B
+        EX      AF,AF'
+
+LINELD1 LD      A,(HL)
+        OR      C
+        LD      (HL),A
+        RLC     C
+        JP      NC,LINELD2
+        DEC     L
+LINELD2 EX      AF,AF'
+        SUB     D
+        JR      NC,LINELD4
+        ADD     A,E
+        EX      AF,AF'
+        LD      A,H
+        DEC     H
+        AND     7
+        JP      NZ,LINELD3
+        LD      A,L
+        SUB     #20
+        LD      L,A
+        JR      C,LINELD3
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+LINELD3 DJNZ    LINELD1
+        RET
+LINELD4 EX      AF,AF'
+        DJNZ    LINELD1
+        RET
+
+LINELU  PUSH    HL
+        CALL    GET_ADR
+        POP     DE
+        LD      B,D
+        LD      A,D
+        INC     E
+        INC     B
+        EX      AF,AF'
+
+LINELU1 LD      A,(HL)
+        OR      C
+        LD      (HL),A
+        LD      A,H
+        DEC     H
+        AND     7
+        JP      NZ,LINELU2
+        LD      A,L
+        SUB     #20
+        LD      L,A
+        JR      C,LINELU2
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+LINELU2 EX      AF,AF'
+        SUB     E
+        JR      NC,LINELU3
+        ADD     A,D
+        RLC     C
+        JP      NC,LINELU3
+        DEC     L
+LINELU3 EX      AF,AF'
+        DJNZ    LINELU1
+        RET
+
+LINER   CP      H
+        LD      L,A
+        JR      C,LINERU
+
+        PUSH    HL
+        CALL    GET_ADR
+        POP     DE
+        LD      B,E
+        LD      A,E
+        INC     D
+        INC     B
+        EX      AF,AF'
+
+LINERD1 LD      A,(HL)
+        OR      C
+        LD      (HL),A
+        RRC     C
+        JP      NC,LINERD2
+        INC     L
+LINERD2 EX      AF,AF'
+        SUB     D
+        JR      NC,LINERD4
+        ADD     A,E
+        EX      AF,AF'
+        LD      A,H
+        DEC     H
+        AND     7
+        JP      NZ,LINERD3
+        LD      A,L
+        SUB     #20
+        LD      L,A
+        JR      C,LINERD3
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+LINERD3 DJNZ    LINERD1
+        RET
+LINERD4 EX      AF,AF'
+        DJNZ    LINERD1
+        RET
+
+LINERU  PUSH    HL
+        CALL    GET_ADR
+        POP     DE
+        LD      B,D
+        LD      A,D
+        INC     E
+        INC     B
+        EX      AF,AF'
+
+LINERU1 LD      A,(HL)
+        OR      C
+        LD      (HL),A
+        LD      A,H
+        DEC     H
+        AND     7
+        JP      NZ,LINERU2
+        LD      A,L
+        SUB     #20
+        LD      L,A
+        JR      C,LINERU2
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+LINERU2 EX      AF,AF'
+        SUB     E
+        JR      NC,LINERU3
+        ADD     A,D
+        RRC     C
+        JP      NC,LINERU3
+        INC     L
+LINERU3 EX      AF,AF'
+        DJNZ    LINERU1
+        RET
+
+     Далее приведены подпрограммы расчета
+адреса  в  экране  и установки точки, ис-
+пользуемые при рисовании линий (установка
+точки нужна только для первой процедуры).
+
+
+PLOT    PUSH    HL      ;установка точки
+        PUSH    DE
+        EX      AF,AF'
+        CALL    GET_ADR
+        OR      (HL)
+        LD      (HL),A
+        EX      AF,AF'
+        POP     DE
+        POP     HL
+        RET
+
+GET_ADR LD      A,#BF   ;расчет адреса в экране
+        SUB     D
+        LD      D,A
+        SRL     A
+        SCF
+        RRA
+        SRL     A
+        XOR     D
+        AND     #F8
+        XOR     D
+        LD      H,A
+        LD      A,E
+        RLCA
+        RLCA
+        RLCA
+        XOR     D
+        AND     #C7
+        XOR     D
+        RLCA
+        RLCA
+        LD      L,A
+        LD      A,E
+        AND     7
+        INC     A
+        LD      C,B     ;сохранение B
+        LD      B,A
+        LD      A,1
+GETADR1 RRCA
+        DJNZ    GETADR1
+        LD      B,C     ;восстановление B
+        LD      C,A     ;маска в c
+        RET
+
+     Эти  подпрограммы  приведены  только
+для  примера.  На практике лучше вставить
+вычисление  адреса  и установку точки не-
+посредственно  в  программу  линии  и ис-
+пользовать   для   расчета  таблицы  (см.
+ZX-Format N7 , "Кодинг для начинающих" ).
+
+     В приложении  вы  найдете  исходники
+этих процедур (LINE1 и LINE2).
+
+
+
+-Приложение: LINE 1.C--------------------
+
+    ORG #8000
+    LD  HL,0
+    LD  DE,#BFFF
+
+
+LINE    LD  A,H ;расчет смещений
+    SUB D
+    JR  NC,LINE1
+    EX  DE,HL   ;линия рисуется снизу вверх
+    NEG     ;смена знака смещения
+LINE1   LD  H,A ;H=dy=|y2-y1|
+    LD  A,L
+    SUB E
+    LD  BC,#141C;INC D [#14], INC E [#1C]
+    JR  NC,LINE2
+    INC C   ;если x1<x2 то DEC E [#1D]
+    NEG     ;смена знака смещения
+LINE2   CP  H
+    LD  L,A ;L=dx=|x2-x1|
+    JR  C,LINE3 ;если dx<dy то продолжение
+    LD  L,H ;замена dx<->dy
+    LD  H,A
+    LD  A,B ;замена INC D <-> INC/DEC E
+    LD  B,C
+    LD  C,A
+LINE3   LD  A,B ;модификация кода
+    LD  (LINE5),A
+    LD  A,C
+    LD  (LINE6),A
+    LD  B,H ;кол-во точек в линии
+    LD  A,H
+    INC L
+    INC B
+LINE4   CALL    PLOT    ;установка точки
+LINE5   NOP
+;изменение координаты с большим смешением
+;направление зависит от знака смешения
+    SUB L
+    JR  NC,LINE7
+LINE6   NOP
+;изменение координаты с меньшим смешением
+    ADD A,H
+LINE7   DJNZ    LINE4
+    RET
+
+
+PLOT    PUSH    HL  ;установка точки
+    PUSH    DE
+    EX  AF,AF'
+    LD  A,#BF   ;расчет адреса в экране
+    SUB D
+    LD  D,A
+    SRL A
+    SCF
+    RRA
+    SRL A
+    XOR D
+    AND #F8
+    XOR D
+    LD  H,A
+    LD  A,E
+    RLCA
+    RLCA
+    RLCA
+    XOR D
+    AND #C7
+    XOR D
+    RLCA
+    RLCA
+    LD  L,A
+    LD  A,E
+    AND 7
+    INC A
+    LD  C,B ;сохранение B
+    LD  B,A
+    LD  A,1
+GETADR1 RRCA
+    DJNZ    GETADR1
+    LD  B,C ;восстановление B
+    OR  (HL)
+    LD  (HL),A
+    EX  AF,AF'
+    POP DE
+    POP HL
+    RET
+
+-Приложение: LINE 2.C--------------------
+
+    ORG #8000
+    LD  HL,0
+    LD  DE,#BFFF
+
+
+LINE    LD  A,H
+    SUB D
+    JR  NC,LINE1
+    EX  DE,HL
+    NEG
+LINE1   LD  H,A
+    LD  A,L
+    SUB E
+    JR  NC,LINER
+
+    NEG
+    CP  H
+    LD  L,A
+    JR  C,LINELU
+
+    PUSH    HL
+    CALL    GET_ADR
+    POP DE
+    LD  B,E
+    LD  A,E
+    INC D
+    INC B
+    EX  AF,AF'
+
+LINELD1 LD  A,(HL)
+    OR  C
+    LD  (HL),A
+    RLC C
+    JP  NC,LINELD2
+    DEC L
+LINELD2 EX  AF,AF'
+    SUB D
+    JR  NC,LINELD4
+    ADD A,E
+    EX  AF,AF'
+    LD  A,H
+    DEC H
+    AND 7
+    JP  NZ,LINELD3
+    LD  A,L
+    SUB #20
+    LD  L,A
+    JR  C,LINELD3
+    LD  A,H
+    ADD A,8
+    LD  H,A
+LINELD3 DJNZ    LINELD1
+    RET
+LINELD4 EX  AF,AF'
+    DJNZ    LINELD1
+    RET
+
+LINELU  PUSH    HL
+    CALL    GET_ADR
+    POP DE
+    LD  B,D
+    LD  A,D
+    INC E
+    INC B
+    EX  AF,AF'
+
+LINELU1 LD  A,(HL)
+    OR  C
+    LD  (HL),A
+    LD  A,H
+    DEC H
+    AND 7
+    JP  NZ,LINELU2
+    LD  A,L
+    SUB #20
+    LD  L,A
+    JR  C,LINELU2
+    LD  A,H
+    ADD A,8
+    LD  H,A
+LINELU2 EX  AF,AF'
+    SUB E
+    JR  NC,LINELU3
+    ADD A,D
+    RLC C
+    JP  NC,LINELU3
+    DEC L
+LINELU3 EX  AF,AF'
+    DJNZ    LINELU1
+    RET
+
+LINER   CP  H
+    LD  L,A
+    JR  C,LINERU
+
+    PUSH    HL
+    CALL    GET_ADR
+    POP DE
+    LD  B,E
+    LD  A,E
+    INC D
+    INC B
+    EX  AF,AF'
+
+LINERD1 LD  A,(HL)
+    OR  C
+    LD  (HL),A
+    RRC C
+    JP  NC,LINERD2
+    INC L
+LINERD2 EX  AF,AF'
+    SUB D
+    JR  NC,LINERD4
+    ADD A,E
+    EX  AF,AF'
+    LD  A,H
+    DEC H
+    AND 7
+    JP  NZ,LINERD3
+    LD  A,L
+    SUB #20
+    LD  L,A
+    JR  C,LINERD3
+    LD  A,H
+    ADD A,8
+    LD  H,A
+LINERD3 DJNZ    LINERD1
+    RET
+LINERD4 EX  AF,AF'
+    DJNZ    LINERD1
+    RET
+
+LINERU  PUSH    HL
+    CALL    GET_ADR
+    POP DE
+    LD  B,D
+    LD  A,D
+    INC E
+    INC B
+    EX  AF,AF'
+
+LINERU1 LD  A,(HL)
+    OR  C
+    LD  (HL),A
+    LD  A,H
+    DEC H
+    AND 7
+    JP  NZ,LINERU2
+    LD  A,L
+    SUB #20
+    LD  L,A
+    JR  C,LINERU2
+    LD  A,H
+    ADD A,8
+    LD  H,A
+LINERU2 EX  AF,AF'
+    SUB E
+    JR  NC,LINERU3
+    ADD A,D
+    RRC C
+    JP  NC,LINERU3
+    INC L
+LINERU3 EX  AF,AF'
+    DJNZ    LINERU1
+    RET
+
+
+GET_ADR LD  A,#BF   ;расчет адреса в экране
+    SUB D
+    LD  D,A
+    SRL A
+    SCF
+    RRA
+    SRL A
+    XOR D
+    AND #F8
+    XOR D
+    LD  H,A
+    LD  A,E
+    RLCA
+    RLCA
+    RLCA
+    XOR D
+    AND #C7
+    XOR D
+    RLCA
+    RLCA
+    LD  L,A
+    LD  A,E
+    AND 7
+    INC A
+    LD  C,B ;сохранение B
+    LD  B,A
+    LD  A,1
+GETADR1 RRCA
+    DJNZ    GETADR1
+    LD  B,C ;восстановление B
+    LD  C,A ;маска в c
+    RET
+</pre>

@@ -1,0 +1,630 @@
+Из журнала Adventurer #8, Рыбинск, 20.08.98
+
+
+
+    Иван Рощин, Москва, 1998
+
+     Если вы  видели  "ART VISION" demo ,
+то  помните,  что  в  последней части там
+движется    атрибутная   надпись   "intel
+outside" . Так как надпись атрибутная, то
+и перемещается она с дискретностью 8 пик-
+селей  (1  знакоместо),  что  выглядит не
+очень красиво. Я написал программу, кото-
+рая,  по существу, реализует тот же самый
+полноэкранный, "укладывающийся в прерыва-
+ние"  эффект, но теперь перемещение - по-
+пиксельное,  что выглядит несравнимо луч-
+ше. Программа снабжена подробными коммен-
+тариями,  так  что  разобраться  в ней не
+составит большого труда.
+     Если  вы  захотите  посмотреть,  как
+выглядел  этот  эффект  "в  оригинале"  -
+просто  уберите  из программы две строки,
+помеченные "*".
+     Картинка  размером  64*64 знакоместа
+взята из "ART VISION" demo  и находится в
+массиве  PICTURE. Каждое знакоместо коди-
+руется  одним  битом,  таким образом, вся
+картинка занимает 512 байт.
+     Траектория  движения  задается с по-
+мощью  массива CRDS, который содержит 100
+элементов следующего вида:
+
+     1  байт  -  смещение (в знакоместах)
+левой  стороны фрагмента относительно ле-
+вой границы картинки (см. рис.)
+     1  байт  -  смещение (в пикселах, по
+модулю 8) левой стороны фрагмента относи-
+тельно левой границы картинки.
+     1  байт  -  смещение (в знакоместах)
+верхней  стороны  фрагмента  относительно
+верхней границы картинки.
+     1  байт  -  смещение (в пикселах, по
+модулю 8) верхней стороны фрагмента отно-
+сительно верхней границы картинки.
+
+ +------------------>x
+ |                 |-- вся картинка
+ |  +-------+      |
+ |  |       |      |
+ |  |       |--------- выводимый
+ |  |       |      |   фрагмент
+ |  +-------+      |
+ |                 |
+ |                 |
+ |-----------------+
+ y
+
+     Количество элементов в массиве и  их
+значения можно изменять,  тем самым зада-
+вая новую траекторию движения.
+   Итак, вот сама программа:
+
+        CALL    MAKEADR  ;Подготовка...
+        CALL    UNPACK
+        CALL    CLS
+
+M1      LD      IX,CRDS  ;адрес таблицы
+        LD      D,100    ;кол-во координат
+                         ;в таблице
+M2      LD      BC,4
+        LD      A,(IX)   ;Берем
+        LD      (XATR),A ;координаты
+        LD      A,(IX+1) ;выводимого окна
+        LD      (XPIX),A ;*
+        LD      A,(IX+2)
+        LD      (YATR),A
+        LD      A,(IX+3)
+        LD      (YPIX),A ;*
+
+        ADD     IX,BC    ;Увелич. адрес
+        PUSH    IX
+        PUSH    DE
+        CALL    OUTSCR   ;Вывод на экран
+        POP     DE
+        POP     IX
+
+        XOR     A
+        IN      A,(254)
+        CPL
+        AND     31       ;Если что-то
+        RET     NZ       ;нажато, выходим
+
+        DEC     D        ;Продолжаем...
+        JR      NZ,M2
+        JR      M1
+
+;***************************************
+;Проц. OUTSCR выводит на экран фрагмент
+;картинки.
+;Вход: XATR,XPIX - смещение левой
+;стороны фрагмента относительно
+;левой границы картинки (XATR*8+XPIX
+;пикселов);
+;YATR,YPIX - смещение верхней стороны
+;фрагмента относительно верхней границы
+;картинки.
+
+OUTSCR  DI
+        LD      (TO_Q+1),SP ;Сохранили SP
+        LD      SP,TAB_SCR
+
+;SP указывает на начало таблицы адресов
+;строк экрана. При каждом выполнении
+;команды POP со стека снимается адрес
+;очередной строки.
+
+        LD      A,(XPIX)
+        ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        ADD     A,A
+        ADD     A,#80
+        LD      H,A
+        LD      L,0
+        LD      A,(YATR)
+        LD      D,A
+        LD      E,0
+        SRL     D
+        RR      E
+        SRL     D
+        RR      E
+        ADD     HL,DE
+        LD      D,0
+        LD      A,(XATR)
+        LD      E,A
+        ADD     HL,DE
+
+        POP     DE            ;#4000
+        LD      BC,-#10
+        EX      DE,HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (LP4+1),DE
+
+;HL указывает на строку изображения;
+;DE - на адрес в видеопамяти, куда
+;нужно переслать эту строку
+;(в данном случае это самая верхняя
+;строка экрана, с адресом #4000).
+
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+
+;Пересылаем оставшиеся (7-YPIX) строки:
+
+        LD      (HL_S1+1),HL
+
+        LD      A,(YPIX)
+        LD      B,A
+        LD      A,7
+        SUB     B
+        JP      Z,SCRH
+
+LP4     LD      HL,0
+        POP     DE
+        LD      BC,-#10
+        EX      DE,HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (LP4+1),DE
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        DEC     A
+        JP      NZ,LP4
+
+;Теперь еще 23 раза пересылаем по 8 стр.
+
+SCRH    LD      YL,23  ;Счетчик
+HL_S1   LD      HL,0   ;Адрес очередной
+        LD      BC,#40 ;пересылаемой
+        ADD     HL,BC  ;строки
+        LD      (HL_S1+1),HL
+
+;Подготавливаем адреса для переброски:
+
+        EX      DE,HL   ;Сохранили HL
+        LD      C,#10
+        POP     HL      ;Куда пересылать
+        LD      (SP_0+1),HL
+        ADD     HL,BC
+        LD      (SP_01+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_1+1),HL
+        ADD     HL,BC
+        LD      (SP_11+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_2+1),HL
+        ADD     HL,BC
+        LD      (SP_21+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_3+1),HL
+        ADD     HL,BC
+        LD      (SP_31+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_4+1),HL
+        ADD     HL,BC
+        LD      (SP_41+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_5+1),HL
+        ADD     HL,BC
+        LD      (SP_51+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_6+1),HL
+        ADD     HL,BC
+        LD      (SP_61+1),HL
+        POP     HL      ;На строку ниже
+        LD      (SP_7+1),HL
+        ADD     HL,BC
+        LD      (SP_71+1),HL
+        LD      (PUT_SP+1),SP ;Сохр. SP
+
+        EX      DE,HL   ;Восстановили HL
+        LD      BC,-#20
+        ADD     HL,BC
+        LD      SP,HL
+        POP     AF      ;Взяли первые
+        POP     BC      ;16 байт
+        POP     DE      ;пересылаемой
+        POP     HL      ;строки
+        EXX
+        POP     BC
+        POP     DE
+        POP     HL
+        POP     IX
+        LD      (TWO+1),SP
+
+SP_0    LD      SP,0    ;Записываем их
+        PUSH    IX      ;на экран
+        PUSH    HL      ;в 8 соседних
+        PUSH    DE      ;строк
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_1    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_2    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_3    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_4    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_5    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_6    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_7    LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+
+TWO     LD      SP,0
+        POP     AF      ;Взяли вторые
+        POP     BC      ;16 байт
+        POP     DE      ;пересылаемой
+        POP     HL      ;строки
+        EXX
+        POP     BC
+        POP     DE
+        POP     HL
+        POP     IX
+
+SP_01   LD      SP,0
+        PUSH    IX      ;Записываем...
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_11   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_21   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_31   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_41   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_51   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_61   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+SP_71   LD      SP,0
+        PUSH    IX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        EXX
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+
+PUT_SP  LD      SP,0    ;Восст. SP
+        DEC     YL      ;Уменьшаем счетчик
+        LD      A,YL
+        AND     A
+        JP      Z,END_ML ;Вывели 23 строки
+
+;После того, как вывели 12 строк, ждем
+;прерывания. Это нужно для синхронизации
+;с ходом луча. Когда луч рисует верхнюю
+;часть экрана, программа выводит
+;изображение в нижнюю часть, и наоборот.
+
+        CP      12
+        JP      NZ,HL_S1
+        LD      HL,0
+        ADD     HL,SP
+        LD      SP,(TO_Q+1)
+        PUSH    IY
+        LD      IY,#5C3A
+        EI
+        HALT
+        DI
+        POP     IY
+        LD      SP,HL
+        JP      HL_S1
+
+;Если YPIX<>0, нужно вывести последние
+;строки в самом низу экрана:
+
+END_ML  LD      A,(YPIX)
+        AND     A
+        JP      Z,TO_Q
+
+        LD      HL,(HL_S1+1)
+        LD      BC,#20
+        ADD     HL,BC
+        POP     DE
+        LD      BC,-#10
+        EX      DE,HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (LP5+1),DE
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+
+;Пересылаем оставшиеся строки:
+
+        LD      A,(YPIX)
+        DEC     A
+        JP      Z,TO_Q
+        LD      B,A
+
+LP5     LD      HL,0
+        POP     DE
+        LD      BC,-#10
+        EX      DE,HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      (LP5+1),DE
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        LDI:LDI:LDI:LDI:LDI:LDI:LDI:LDI
+        DEC     A
+        JP      NZ,LP5
+
+TO_Q    LD      SP,0     ;Восстановили SP
+        LD      IY,#5C3A ;---/--- IY
+        EI
+        RET     ;Выход из процедуры
+
+;***************************************
+;Проц. MAKEADR создает таблицу с
+;адресами всех 192 строк экрана,
+;в которой каждый адрес увеличен на #10.
+;Адрес таблицы - TAB_SCR.
+
+MAKEADR LD      HL,TAB_SCR
+        LD      DE,#4010
+        LD      B,192
+
+LP_MAKE LD      (HL),E
+        INC     HL
+        LD      (HL),D
+        INC     HL
+        CALL    DOWN_DE
+        DJNZ    LP_MAKE
+        RET
+
+DOWN_DE INC     D
+        LD      A,D
+        AND     7
+        RET     NZ
+        LD      A,E
+        SUB     #E0
+        LD      E,A
+        RET     NC
+        LD      A,D
+        SUB     8
+        LD      D,A
+        RET
+
+;***************************************
+;Проц. UNPACK распаковывает картинку
+;по адресу PICTURE на #8000-#FFFF
+
+UNPACK  LD      HL,#8000
+        LD      DE,PICTURE
+LP_UP1  LD      B,8
+        LD      A,(DE)
+LP_UP2  RLA
+        LD      C,#FF
+        JR      C,TO_MEM
+        LD      C,0
+TO_MEM  LD      (HL),C
+        INC     HL
+        DJNZ    LP_UP2
+        INC     DE
+        LD      A,H
+        CP      #90
+        JR      NZ,LP_UP1
+
+        LD      HL,#8FFF
+        LD      DE,#9FFF
+        AND     A
+        PUSH    AF
+
+LP_UP3  POP     AF
+        LD      A,(HL)
+        RLA
+        PUSH    AF
+        LD      (DE),A
+        DEC     HL
+        DEC     DE
+        LD      A,L
+        CP      #FF
+        JR      NZ,LP_UP3
+        LD      A,H
+        AND     #0F
+        CP      #0F
+        JR      NZ,LP_UP3
+        LD      BC,#2000
+        ADD     HL,BC
+        EX      DE,HL
+        ADD     HL,BC
+        EX      DE,HL
+        LD      A,D
+        CP      #0F
+        JR      NZ,LP_UP3
+        POP     AF
+        RET
+
+;***************************************
+;Проц. CLS устанавливает атрибуты:
+
+CLS     LD      HL,#5800
+        LD      (HL),5
+        LD      DE,#5801
+        LD      BC,#2FF
+        LDIR
+        RET
+
+;****************************************
+;Картинка #40х#40 = #1000 бит = #200 байт
+
+PICTURE
+      DB #00,#00,#00,#00,#7F,#F0,#00,#00
+      DB #00,#00,#00,#1F,#FF,#FF,#80,#00
+      DB #00,#00,#00,#7F,#FF,#FF,#E0,#00
+      DB #00,#00,#03,#FF,#FF,#FF,#FC,#00
+      DB #00,#00,#1F,#FF,#FF,#FF,#FE,#00
+      DB #00,#00,#3F,#FF,#FF,#FF,#FE,#00
+      DB #00,#00,#FF,#FE,#1F,#FF,#FC,#00
+      DB #00,#01,#FF,#F0,#03,#FF,#FC,#00
+      DB #00,#07,#FF,#00,#00,#1F,#F8,#00
+      DB #00,#0F,#F8,#00,#00,#0F,#F8,#00
+      DB #00,#1F,#C0,#00,#00,#C1,#F0,#00
+      DB #00,#3F,#00,#18,#00,#E0,#70,#00
+      DB #00,#7E,#00,#18,#01,#E0,#20,#00
+      DB #00,#F0,#00,#18,#01,#E0,#00,#00
+      DB #01,#F0,#01,#FF,#81,#C0,#04,#00
+      DB #03,#E7,#03,#FF,#31,#C0,#0E,#00
+      DB #03,#C7,#00,#1C,#79,#C0,#0F,#00
+      DB #07,#87,#00,#18,#F9,#C0,#0F,#80
+      DB #0F,#00,#5E,#19,#99,#C0,#1F,#C0
+      DB #0F,#0E,#7E,#19,#99,#C0,#1F,#C0
+      DB #1E,#0E,#67,#39,#B1,#C0,#3F,#F0
+      DB #1C,#0E,#67,#31,#B1,#C0,#3F,#F0
+      DB #1C,#0C,#67,#33,#E1,#C0,#0F,#F8
+      DB #38,#0C,#67,#33,#C1,#C0,#07,#F8
+      DB #30,#1C,#67,#33,#89,#C0,#03,#F8
+      DB #30,#18,#67,#31,#99,#80,#01,#FC
+      DB #30,#18,#67,#31,#99,#80,#00,#FC
+      DB #60,#18,#07,#31,#F1,#80,#E0,#7C
+      DB #60,#18,#03,#30,#E1,#80,#E0,#7E
+      DB #60,#00,#00,#30,#00,#00,#E0,#3E
+      DB #E0,#00,#00,#00,#00,#00,#E0,#3E
+      DB #E0,#00,#00,#00,#00,#00,#E0,#1E

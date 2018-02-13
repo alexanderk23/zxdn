@@ -1,0 +1,980 @@
+Из журнала Adventurer#10,
+Ярославская область, г.Рыбинск, ? (1999?)
+
+
+
+      Maximum/INTEGER
+ 
+     Здравствуйте,    дорогие    читатели
+ADVENTURER 'a,  это  Вас  снова  тревожит
+Maximum  со  своей неутолимой жаждой что-
+то писать в Ассемблере...
+ 
+     На этот раз я представляю на ваш суд
+достаточно  сложные  процедурки, хотя для
+кого как... Речь в данной статье пойдет о
+повальной  метематике, всяких там косину-
+сах и корнях, перемноженных на синус !
+ 
+     Ну ладно, к телу, т. е. к делу:
+ 
+     Многих, наверное, не устраивает ско-
+рость работы встроенного калькулятора,а с
+числами  надо как-то работать, многие пи-
+шут  умные  процедурки, типа деления H на
+L, а на выходе в D целая часть, в E дроб-
+ная  часть числа, синус вычисляют по таб-
+лицам и т. д. и т. п.
+ 
+     Здесь  приводятся  процедуры из биб-
+лиотеки версии 1. 0, в нее вошли:
+ 
+     - сложение;
+     - вычитание;
+     - умножение;
+     - деление;
+     - косинус;
+     - синус;
+     - несколько  вспомогательных  проце-
+дур.
+ 
+     И  все эти операции оперируют с IEEE
+числами (вещественными), диапазон которых
+от  -5. 9Е-39 до +3. 4Е38, обрабатывается
+7 цифр после точки, что весьма точно !
+ 
+     Для  представления таких чисел нужно
+всего  4 байта, в форме мантисса-порядок.
+Для операций над IEEE числами используют-
+ся регистры DE и HL, D - для хранения по-
+рядка, EHL - для хранения мантиссы, 7 бит
+регистра H - хранит знак числа.
+ 
+     Например:
++--+--------+--------+--------+--------+
+|  |    H   |    L   |    E   |    D   |
++--+--------+--------+--------+--------+
+|2=|01000000|00000000|00000000|00000001|
+| =|#40     |#00     |#00     |#01     |
++--+--------+--------+--------+--------+
+|1=|01000000|00000000|00000000|00000000|
+| =|#40     |#00     |#00     |#00     |
++--+--------+--------+--------+--------+
+|-12.5      |        |        |        |
+| =|11100100|00000000|00000000|00000011|
+| =|#E4     |#00     |#00     |#03     |
++--+--------+--------+--------+--------+
+|0.1        |        |        |        |
+| =|01100110|01100110|01100110|11111100|
+| =|#66     |#66     |#66     |#FC     |
++--+--------+--------+--------+--------+
+ 
+     Для  облегчения  работы  с IEEE были
+написаны  две  вспомогательные  процедуры
+для перевода чисел из одной системы счис-
+ления  в  другую,  т. е. из IEEE в Int, и
+наоборот (Int - это слово со знаком).
+ 
+     В  данных процедурах могут возникать
+математические  ошибки,  в  таком  случае
+осуществляется выход на ERROR, а в рег. A
+будет находиться:
+ 
+     1 - при переполнении числа;
+     2 - при делении на ноль.
+ 
+     Сюда следует вставить свою процедуру
+обработки ощибок, пока там RET.
+ 
+     Перейдем к описанию процедур:
+ 
+     1. Сложение двух IEEE чисел.
+     На входе: на стеке IEEE число, к ко-
+торому нужно  прибавить, а в DE, HL - что
+прибавить.
+     На выходе: DE, HL - сумма чисел.
+ 
+     Пример: Нужно сложить 2 и 10:
+ 
+     LD DE, #0100 ; это
+     LD HL, #4000 ; число 2
+     PUSH HL ; заносим
+     PUSH DE ; на стек
+     LD DE, #0300 ; это
+     LD HL, #5000 ; число 10
+     CALL IEEE_Add
+     ...
+ 
+     (Обратите  внимание  как число зано-
+сится на стек, сначала HL, а потом DE !)
+ 
+     2. Разность двух IEEE чисел.
+     На  входе:  на  стеке IEEE число, от
+которого нужно отнять, а в DE, HL - что
+отнять.
+     На выходе: DE, HL - разность чисел.
+ 
+     Пример: Нужно отнять 1 от 2:
+ 
+     LD DE, #0100 ; это
+     LD HL, #4000 ; число 2
+     PUSH HL ; заносим
+     PUSH DE ; на стек
+     LD DE, #0000 ; это
+     LD HL, #4000 ; число 1
+     CALL IEEE_Sub
+     ...
+ 
+     3. Умножение двух IEEE чисел.
+     На входе: на стеке IEEE число, кото-
+рое нужно умножить, а в DE, HL - на
+что умножить.
+     На  выходе:  DE, HL -  перемноженное
+число.
+ 
+     Пример: Нужно умножить 10 на 2:
+ 
+     LD DE, #0300 ; это
+     LD HL, #5000 ; число 10
+     PUSH HL ; заносим
+     PUSH DE ; на стек
+     LD DE, #0100 ; это
+     LD HL, #4000 ; число 2
+     CALL IEEE_Mul
+     ...
+ 
+     4. Деление двух IEEE чисел.
+     На входе: на стеке IEEE число, кото-
+рое нужно разделить, а в DE, HL - на  что
+раделить.
+     На выходе: DE, HL - разделенное чис-
+ло.
+ 
+     Пример: Нужно разделить 10 на 2:
+ 
+     LD DE, #0300 ; это
+     LD HL, #5000 ; число 10
+     PUSH HL ; заносим
+     PUSH DE ; на стек
+     LD DE, #0100 ; это
+     LD HL, #4000 ; число 2
+     CALL IEEE_Div
+     ...
+ 
+ 
+     5. Перевод  из  формата Int в формат
+IEEE.
+     На  входе:  в HL - число для перево-
+да.
+     На выходе: DE, HL - IEEE число.
+ 
+     Пример: Нужно  перевести  число 20 в
+IEEE формат:
+ 
+     LD HL, 20
+     CALL Int_IEEE
+     ...
+     Для числа -20 это:
+     LD HL, -20
+     CALL Int_IEEE
+ 
+     6. Перевод  из формата IEEE в формат
+Int.
+     На входе: DE, HL - число для перево-
+да.
+     На выходе: HL - Int число.
+ 
+ 
+     7. Возвращает  целую  часть  от IEEE
+числа в Int форме в HL.
+     На входе: DE, HL - IEEE число.
+     На выходе: HL - Int Число.
+ 
+     Пример:
+     ...
+     LD DE, num_1
+     LD HL, num_2
+     CALL IEEE_Trunc
+     ...
+ 
+     8. Косинус.
+     На  входе: DE, HL - градус, заданный
+в радианах.
+     На выходе: DE, HL - Косинус числа.
+ 
+     Пример:
+     ...
+     LD DE, num_1
+     LD HL, num_2
+     CALL IEEE_Cos
+     ...
+ 
+     9. Синус.
+     На  входе: DE, HL - градус, заданный
+в радианах.
+     На выходе: DE, HL - Синус числа.
+ 
+     Пример:
+     ...
+     LD DE, num_1
+     LD HL, num_2
+     CALL IEEE_Sin
+     ...
+ 
+ 
+     10. Квадрат числа.
+     На входе: DE, HL - число.
+     На выходе: DE, HL - квадрат числа.
+ 
+     Пример:
+     ...
+     LD DE, num_1
+     LD HL, num_2
+     CALL IEEE_Square
+     ...
+ 
+     Ну  вот,  вроде, и все, что надо для
+нормальной работы с данной библиотекой.
+ 
+     До встречи в следующих номерах...
+ 
+ 
++------ Математическая библиотека -----+
+| ### #### #### ####        ##     ##  |
+| ### #### #### ####       ###    ###  |
+|  #  #    #    #           ##     ##  |
+|  #  ###  ###  ###   #   # ##     ##  |
+|  #  #    #    #     #   # ##     ##  |
+| ### #### #### ####   # #  ##     ##  |
+| ### #### #### ####    #  #### # #### |
++- 17-19.03.99 -----  Maximum/iNTEGER +
+ 
+ERR_Overflow EQU 1
+ERR_Div_by_0 EQU 2
+ 
+ERROR   ret
+ 
++--------------------------------------+
+| IEEE_Add - Сложение двух IEEE чисел: |
+|          LD DE,num0_1                |
+|          LD HL,num0_2                |
+|          PUSH HL                     |
+|          PUSH DE                     |
+|          LD DE,num1_1                |
+|          LD HL,num1_2                |
+|          CALL IEEE_Add               |
++--------------------------------------+
+ 
+IEEE_Add
+ 
+        bit 6,h
+        jp z,exit_2
+        ld iy,0
+        add iy,sp
+        ld a,h
+        ld b,(iy+5)
+        bit 6,b
+        jr z,IEEE_A6
+        xor b
+        push af
+        push de
+        ld a,d
+        ld d,b
+        ld b,e
+        ld e,(iy+4)
+        sub (iy+3)
+        jp pe,IEEE_A7
+        jp m,IEEEA13
+        ld c,(iy+2)
+        jr z,IEEEA14
+IEEE_A1 push hl
+        res 7,d
+        res 7,h
+IEEE_A2 srl d
+        rr e
+        rr c
+        dec a
+        jr nz,IEEE_A2
+        ld a,b
+        bit 7,(iy-1-1)
+        jr nz,IEEE_A8
+IEEE_A3 add a,c
+        adc hl,de
+        pop bc
+        pop de
+        jp po,IEEE_A4
+        srl h
+        rr l
+        rra
+        inc d
+        jp pe,IEEEA12
+IEEE_A4 ld e,a
+        ld a,b
+        and #80
+        or h
+        ld h,a
+IEEE_A5 pop af
+IEEE_A6 pop bc
+        pop af
+        pop af
+        push bc
+        ret
+IEEE_A7 pop de
+        jr nc,exit_1
+        jr IEEE_A5
+IEEE_A8 sub c
+        sbc hl,de
+IEEE_A9 pop bc
+IEEEA10 pop de
+IEEEA11 bit 6,h
+        jr nz,IEEE_A4
+        add a,a
+        adc hl,hl
+        dec d
+        jp po,IEEEA11
+IEEEA12 ld sp,iy
+        pop bc
+        pop hl
+        pop hl
+        push bc
+IEEE_Ov ld a,ERR_Overflow
+        jp ERROR
+IEEEA13 ld c,b
+        ld b,(iy+3)
+        ld (iy-3),b
+        ld b,(iy+2)
+        ex de,hl
+        neg
+        jr IEEE_A1
+IEEEA14 ld a,b
+        push hl
+        res 7,h
+        res 7,d
+        bit 7,(iy-1)
+        jr z,IEEE_A3
+        sub c
+        sbc hl,de
+        jr nz,IEEEA15
+        or a
+        jr z,IEEEA16
+IEEEA15 jr nc,IEEE_A9
+        ld de,0
+        ex de,hl
+        ld c,a
+        pop af
+        cpl
+        ld b,a
+        xor a
+        sub c
+        sbc hl,de
+        jr IEEEA10
+IEEEA16 ld d,h
+        ld e,h
+        pop af
+        pop af
+        jr IEEE_A5
+exit_1  pop af
+exit_2  pop bc
+        pop de
+        pop hl
+        push bc
+        ret
+ 
++--------------------------------------+
+| IEEE_Sub - Разность двух IEEE чисел: |
+|          LD DE,num0_1                |
+|          LD HL,num0_2                |
+|          PUSH HL                     |
+|          PUSH DE                     |
+|          LD DE,num1_1                |
+|          LD HL,num1_2                |
+|          CALL IEEE_Sub               |
++--------------------------------------+
+ 
+IEEE_Sub
+ 
+        ld a,#80
+        xor h
+        ld h,a
+        jp IEEE_Add
+ 
++--------------------------------------+
+| IEEE_Mul - Перемножение IEEE чисел:  |
+|          LD DE,num0_1                |
+|          LD HL,num0_2                |
+|          PUSH HL                     |
+|          PUSH DE                     |
+|          LD DE,num1_1                |
+|          LD HL,num1_2                |
+|          CALL IEEE_Mul               |
++--------------------------------------+
+ 
+IEEE_Mul
+ 
+        ld iy,0
+        add iy,sp
+        ld a,#40
+        and h
+        ld b,(iy+5)
+        and b
+        jr z,IEEE_M9
+        ld a,h
+        xor b
+        and #80
+        ld b,a
+        ld a,(iy+3)
+        add a,d
+        ld c,a
+        jp pe,IEEEA12
+        push bc
+        res 7,h
+        ld c,e
+        xor a
+        ex de,hl
+        ld l,(iy+2)
+        ld b,8
+IEEE_M1 rr l
+        jr nc,IEEE_M2
+        add a,d
+IEEE_M2 rra
+        djnz IEEE_M1
+        rr l
+        ld h,a
+        ld a,(iy+4)
+        ld b,8
+IEEE_M3 rra
+        jr nc,IEEE_M4
+        add hl,de
+IEEE_M4 rr h
+        rr l
+        djnz IEEE_M3
+        rra
+        ld b,7
+IEEE_M5 rr (iy+5)
+        jr nc,IEEE_M6
+        add a,c
+        adc hl,de
+IEEE_M6 rr h
+        rr l
+        rra
+        djnz IEEE_M5
+        pop bc
+        ld e,a
+        ld d,c
+        bit 6,h
+        jr nz,IEEE_M7
+        rl e
+        adc hl,hl
+        jr IEEE_M8
+IEEE_M7 inc d
+        jp pe,IEEEA12
+IEEE_M8 ld a,b
+        or h
+        ld h,a
+        pop bc
+        pop af
+        pop af
+        push bc
+        ret
+IEEE_M9 pop hl
+        pop de
+        ex (sp),hl
+        ld hl,0
+        ld e,h
+        ld d,l
+        ret
+ 
++--------------------------------------+
+| IEEE_Div - Деление двух IEEE чисел:  |
+|          LD DE,num0_1                |
+|          LD HL,num0_2                |
+|          PUSH HL                     |
+|          PUSH DE                     |
+|          LD DE,num1_1                |
+|          LD HL,num1_2                |
+|          CALL IEEE_Sub               |
++--------------------------------------+
+ 
+ 
+IEEE_Div
+ 
+        bit 6,h
+        ld a,ERR_Div_by_0
+        jp z,ERROR
+        ld iy,0
+        add iy,sp
+        ld b,(iy+5)
+        bit 6,b
+        jp z,IEEE_M9
+        ld a,(iy+3)
+        sub d
+        jp pe,IEEEA12
+        push af
+        ld d,b
+        ld c,e
+        ld e,(iy+4)
+        ld a,d
+        xor h
+        and #80
+        res 7,d
+        res 7,h
+        push af
+        ex de,hl
+        ld a,(iy+2)
+        ld b,#08
+IEEE_D1 sub c
+        sbc hl,de
+        jr nc,IEEE_D2
+        add a,c
+        adc hl,de
+IEEE_D2 rl (iy-4)
+        add a,a
+        adc hl,hl
+        djnz IEEE_D1
+        ld b,8
+IEEE_D3 sbc hl,de
+        jr nc,IEEE_D4
+        add hl,de
+IEEE_D4 rla
+        add hl,hl
+        djnz IEEE_D3
+        cpl
+IEEE_D5 ld l,a
+        ld a,h
+        ld b,8
+IEEE_D6 sub d
+        jr nc,IEEE_D7
+        add a,d
+IEEE_D7 rl e
+        add a,a
+        djnz IEEE_D6
+        pop bc
+        ld a,c
+        cpl
+        ld h,a
+        ld a,e
+        pop de
+        cpl
+        bit 7,h
+        jr nz,IEEE_D9
+        dec d
+        jp pe,IEEEA12
+IEEE_D8 ld e,a
+        ld a,h
+        or b
+        ld h,a
+        pop bc
+        pop af
+        pop af
+        push bc
+        ret
+IEEE_D9 srl h
+        rr l
+        rra
+        jr IEEE_D8
+ 
++--------------------------------------+
+| Int_IEEE - Перевод числа из формата  |
+|            int в формат IEEE:        |
+|          LD HL,num                   |
+|          CALL Int_IEEE               |
+| На выходе: DE,HL - IEEE Число        |
++--------------------------------------+
+ 
+ 
+Int_IEEE
+ 
+        ld a,#80
+        and h
+        jp z,I_IEEE1
+        ex de,hl
+        ld hl,0
+        sbc hl,de
+        or a
+I_IEEE1 ld de,0
+        adc hl,de
+        ret z
+        ld d,14
+I_IEEE2 bit 6,h
+        jp nz,I_IEEE3
+        add hl,hl
+        dec d
+        jp I_IEEE2
+I_IEEE3 ld e,0
+        or h
+        ld h,a
+        ret
+ 
++--------------------------------------+
+| IEEE_Int - Перевод числа из формата  |
+| IEEE в число формата Int:            |
+|          LD DE,num_1                 |
+|          LD HL,num_2                 |
+|          CALL IEEE_Int               |
+| На выходе: HL - Int Число            |
++--------------------------------------+
+ 
+IEEE_Int
+ 
+        push hl
+        push de
+        ld de,#ff00
+        ld hl,#4000
+        call IEEE_Add
+        bit 6,h
+        ret z
+        ld a,#80
+        and h
+        ld c,a
+        res 7,h
+        ld a,d
+        or a
+        jp m,IEEE_I5
+        ld a,#0e
+        sub d
+        jp c,IEEE_Ov
+        ld b,a
+        xor a
+        cp e
+        jp z,IEEE_I1
+        inc a
+IEEE_I1 dec b
+        inc b
+        jp z,IEEE_I3
+IEEE_I2 srl h
+        rr l
+        adc a,0
+        djnz IEEE_I2
+IEEE_I3 inc c
+        ret p
+        or a
+        jp z,IEEE_I4
+        inc hl
+IEEE_I4 ex de,hl
+        ld hl,0
+        sbc hl,de
+        ret
+IEEE_I5 inc c
+        ld hl,0
+        ret p
+        dec hl
+        ret
+ 
++--------------------------------------+
+| IEEE_Trunc - Возвращает целую часть  |
+| от IEEE числа в Int форме в HL       |
+|          LD DE,num_1                 |
+|          LD HL,num_2                 |
+|          CALL IEEE_Trunc             |
+| На выходе: HL - Int Число            |
++--------------------------------------+
+ 
+IEEE_Trunc
+ 
+        bit 6,h
+        ret z
+        ld a,#80
+        and h
+        ld c,a
+        res 7,h
+        ld a,14
+        sub d
+        jr z,IEEE_T2
+        jp m,IEEE_T3
+        ld b,a
+IEEE_T1 srl h
+        rr l
+        djnz IEEE_T1
+IEEE_T2 inc c
+        ret p
+        ex de,hl
+        ld hl,0
+        or a
+        sbc hl,de
+        ret
+IEEE_T3 ld hl,0
+        ret
+ 
++--------------------------------------+
+| IEEE_Cos - Косинус числа:            |
+| число задается в радианах !          |
+|          LD DE,num_1                 |
+|          LD HL,num_2                 |
+|          CALL IEEE_Cos               |
+| На выходе: DE,HL - Число             |
++--------------------------------------+
+ 
+IEEE_Cos
+ 
+        bit 6,h
+        jp z,IEEE_Null
+        ld a,d
+        cp #f3
+        jp m,IEEE_Null
+        call IEEE_C0
+        ld b,#00
+        jr nz,IEEE_C1
+        ld b,#80
+        call IEEE_C2
+IEEE_C1 ld a,d
+        add a,#02
+        ex af,af'
+        ld a,#02
+        jr IEEE_S1
+ 
++--------------------------------------+
+| IEEE_Sin - Синус числа:              |
+| число задается в радианах !          |
+|          LD DE,num_1                 |
+|          LD HL,num_2                 |
+|          CALL IEEE_Sin               |
+| На выходе: DE,HL - Число             |
++--------------------------------------+
+ 
+IEEE_Sin
+ 
+        bit 6,h
+        ret z
+        ld a,d
+        cp #f3
+        ret m
+        push hl
+        call IEEE_C0
+        jr nz,IEEE_S0
+        call IEEE_C2
+        xor a
+IEEE_S0 ex af,af'
+        xor a
+        pop bc
+IEEE_S1 ex af,af'
+        xor b
+        cpl
+        and #80
+        ld (d31),a
+        ld a,d
+        cp #fe
+        call z,IEEE_C2
+        ex af,af'
+        add a,a
+        ex af,af'
+        cp #fd
+        jr nz,$+5
+        call IEEE_C2
+        cp #fc
+        ex af,af'
+        add a,a
+        ex af,af'
+        jr nz,IEEE_S2
+        ex af,af'
+        inc a
+        ex af,af'
+        ld bc,#4000
+        push bc
+        ld b,#fd
+        push bc
+        set 7,h
+        call IEEE_Add
+IEEE_S2 ex af,af'
+        exx
+        ld l,a
+        ld h,0
+        ld de,Sin_Tab
+        add hl,de
+        ld a,(hl)
+        ld (d32),a
+        exx
+        ld (d33),de
+        ld (d35),hl
+        call IEEE_Square
+        push hl
+        push de
+        ld bc,#7a3b
+        push bc
+        ld bc,#0021
+        push bc
+        ld bc,#4d67
+        push bc
+        ld bc,#0157
+		push bc
+        ld bc,#e144
+        push bc
+        ld bc,#00b2
+        push bc
+        call IEEE_Add
+        call IEEE_Div
+        call IEEE_Add
+        ld (d3b),de
+        ld (d3d),hl
+        call IEEE_Div
+        ld c,h
+        ld a,h
+        xor #80
+        ld h,a
+        ld (d37),de
+        ld (d39),hl
+        ld h,c
+        push hl
+        push de
+        ld de,(d3b)
+        ld hl,(d3d)
+        call IEEE_Add
+        ld (d3f),de
+        ld (d41),hl
+        ld a,(d32)
+        srl a
+        jr c,IEEE_S3
+        or a
+        jr nz,IEEE_S6
+        ld de,(d33)
+        ld hl,(d35)
+        inc d
+IEEE_S4 call IEEE_S8
+IEEE_S5 ld a,(d31)
+        or h
+        ld h,a
+        ret
+IEEE_S6 ld de,(d3b)
+        ld hl,(d3d)
+        push hl
+        push de
+        ld de,(d37)
+        ld hl,(d39)
+        call IEEE_Add
+        jr IEEE_S4
+IEEE_S3 ld hl,#5a82
+        ld de,#ff79
+        push hl
+        push de
+        inc d
+        or a
+        jr nz,$+4
+        set 7,h
+        push hl
+        push de
+        ld de,(d37)
+        ld hl,(d39)
+        jr nz,IEEE_S7
+        ld a,h
+        xor #80
+        ld h,a
+IEEE_S7 push hl
+        push de
+        ld hl,(d35)
+        ld de,(d33)
+        call IEEE_Add
+        call IEEE_Mul
+        call IEEE_S8
+        call IEEE_Add
+        jr IEEE_S5
+IEEE_S8 push hl
+        push de
+        ld hl,(d41)
+        ld de,(d3f)
+        call IEEE_Div
+        ret
+ 
+IEEE_C2 ld a,e
+IEEE_C3 dec d
+        add a,a
+        adc hl,hl
+        jr z,IEEE_C4
+        bit 6,h
+        jr z,IEEE_C3
+IEEE_C5 ld e,a
+        ex af,af'
+        inc a
+        ex af,af'
+        ld a,d
+        ret
+ 
+IEEE_C4 or a
+        jr nz,IEEE_C3
+        ld d,a
+        jr IEEE_C5
+ 
+IEEE_C0 push af
+        res 7,h
+        ld bc,#517c
+        push bc
+        ld bc,#fdc0
+        push bc
+        call IEEE_Mul
+        call IEEE_q
+        pop af
+        ex af,af'
+        ld a,d
+        inc a
+        ret
+ 
+Sin_Tab db 0,1,3,2,2,3,1,0,2,3,1,0,0,1,3,2
+ 
+IEEE_q  ld a,h
+        or a
+        ret z
+        jp m,IEEE_q4
+IEEE_q1 bit 7,d
+        ret nz
+        ld b,d
+        inc b
+        ld a,e
+IEEE_q2 add a,a
+        adc hl,hl
+        djnz IEEE_q2
+        ld d,#ff
+        res 7,h
+        ld e,a
+IEEE_q3 bit 6,h
+        ret nz
+        dec d
+        sla e
+        adc hl,hl
+        jr nz,IEEE_q3
+        inc e
+        dec e
+        jr nz,IEEE_q3
+        ld d,e
+        ret
+IEEE_q4 res 7,h
+        call IEEE_q1
+        bit 6,h
+        ret z
+        set 7,h
+        push hl
+        push de
+        ld hl,#4000
+        ld d,l
+        ld e,l
+        call IEEE_Add
+        ret
+ 
+d31     db 0
+d32     db 0
+d33     dw 0
+d35     dw 0
+d37     dw 0
+d39     dw 0
+d3b     dw 0
+d3d     dw 0
+d3f     dw 0
+d41     dw 0
+ 
+IEEE_Null
+        ld hl,#4000
+        ld d,l
+        ld e,l
+        ret
+ 
++--------------------------------------+
+| IEEE_Square - Квадрат числа          |
+|          LD DE,num_1                 |
+|          LD HL,num_2                 |
+|          CALL IEEE_Square            |
+| На выходе: DE,HL - Число             |
++--------------------------------------+
+ 
+IEEE_Square
+        pop bc
+        push hl
+        push de
+        push bc
+        jp IEEE_Mul

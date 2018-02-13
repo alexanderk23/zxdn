@@ -1,0 +1,432 @@
+Из газеты IzhNews #6, Ижевск, 2000
+
+
+
+      ALASM 4.2 RULEZ_..
+ 
+(c) PIXel
+__________________________________________
+ 
+  В данной статье  я  попытаюсь  объяснить
+зачем нужны  все  те  возможности  которые
+предоставляет   упомянутый   в   заголовке
+ассемблер, а   именно   макрокоманды     и
+команды условной  трансляции. Поводом  для
+написания  послужило   полное   отсутствие
+интереса к вышеупомянутым фичам у  местных
+кодеров. В общем о пользе  макросов  много
+написано в SCENERGY#1. Flying/DR  довольно
+хорошо объяснил всем зачем  они  нужны, но
+сделал он это на примере  ассемблера  TASM
+4.12 by XLD, а я использую ALASM_4.2.
+  Начну с определений:
+  Макрокоманда [macro, macro  instruction]
+Команда языка ассемблера, транслируемая  в
+несколько машинных команд.
+  Если в ващей  программе  одна  и  та  же
+последовательность исндтрукций  ассемблера
+испоьзуется   несколько   раз,   то    нет
+необходимости каждый раз ее  переписывать.
+Гораздо   удобнее    оформите    ее    как
+макроопределение  и   обращаться   к   ней
+соответствующей   макрокомандой.  Например
+часто   приходится   использовать    такуь
+последовательность команд:
+  ld   hl,sourse
+  ld   de,destenation
+  ld   bc size-1
+  ldir
+Oформим макрос:
+ MACRO COPY;SOURSE,DEST,SIZE
+  LD   HL,:0
+  LD   DE,:1
+  LD   BC,:2-1
+  LDIR
+ ENDM
+  Например нам надо  скопировать  экран  в
+адрес #С000:
+  ...
+  COPY #4000,#C000,#1B00
+  ...
+  Само  собой  использовать  макрос    нет
+необходимости если  он  без  параметров  и
+состоит не только из директив  ассемблера,
+например:
+ MACRO CLS
+  LD   HL,#4000
+  LD   DE,#C000
+  LD   BC,#1B00
+  LD   (HL),L
+  LDIR
+ ENDM
+  Выгоднее сделать подпрограмму, но о  них
+чуть ниже. Такой макрос будет неэффективен
+т. к. ваш код будет  "жирным", но  немного
+быстрее чем при использовании процедур.
+  Использование  макросов   делаем   текст
+программы нагляднее, например:
+  ...
+  PAUSE  10
+  BORDER 5
+  ...
+выглядит куда приятнее чем:
+  ...
+  LD   B,10
+  HALT
+  DJNZ $-1
+  LD   A,5
+  OUT  (#FE),A
+  ...
+конечно     можно     сделать      обычные
+подпрограммы, но это не будет экономней:
+  LD   A,5
+  CALL BORDER
+BORDER
+  OUT (#FE),A
+  RET
+это изврат т. к. вызов процедуры 3 баита а
+она  сама  2   байта.  При   использовании
+макросов имеем всего 2 байта.
+ 
+  Приведу элементарнейшие макросы:
+ 
+       MACRO   BORDER;COLOR
+       LD      A,:0&7
+       OUT     (#FE),A
+       ENDM
+ 
+       MACRO   PAUSE
+       LD      B,:0
+       HALT
+       DJNZ    $-1
+       ENDM
+ 
+       MACRO   SETIM2;LABEL
+       DI
+       LD      A,#5F
+       LD      I,A
+       LD      HL,:0
+       LD      (#5FFF),HL
+       IM      2
+       EI
+       ENDM
+ 
+       MACRO   TOALASM
+       LD      BC,#7FFD
+       LD      A,%00010100
+       OUT     (C),A
+       JP      #C000
+       ENDM
+ 
+  Следующий посложнее:
+ 
+       MACRO   GETMEM;LABEL,SIZE
+; label - начало нужной области
+; size  - размер области
+       IFN     ? SLOWMEM
+; если метка не опеделена то определим ее
+       SLOWMEM EQU #6000
+; присвоив ей значение #6000
+       ENDIF
+       :0=SLOWMEM
+; label - начало свободной области
+       SLOWMWM=SLOWMEM+:1
+; для след. обращения (:1=size)
+       IFN (('(#8000-SLOWMEM))&%10000000)
+; если slowmem > #8000
+       BORDER  2
+; типо ошибка
+       TOALASM
+; возврат домой.
+       ENDIF
+       ENDM
+ 
+  Данный макрос генерирует  код  только  в
+случае  выхода  за  границу   #8000.  Идея
+создания возникла после  прочтения  статьи
+Flying'a  в  SCENERGY#1  и  сделан  он  по
+образу и подобию макроса для TASM_4.12.
+  Ну думаю макросостроение тепрь закипит в
+нашем городишке (а может  и  не  только  в
+нашем). Настоятельно рекомендую  прочитать
+статью на которую я неоднократно ссылался.
+ 
+  Как я уже говорил  использовать  макросы
+не всегда эффективно и стоит  использовать
+стандартный   прием,  т.  е.   испоьзовать
+процедуры.  О создании библиотек  процедур
+говорил  и Flying, но   там   приходится в
+начале исходника указывать что мне надо, а
+что нет.    В ALASM'e можно избежать этого
+рудимента. Допустим библиотека содержит 50
+процедур и подгружается в конец исходника.
+Я в своей программе использую 2 процедуры:
+clrscr   и   clratr,  значит   мне    надо
+отассемблировать    только    их.   Кароче
+оформлять библиотеку надо так:
+ 
+       IF   ?PROC1-1
+PROC1  ....
+       ENDIF
+ 
+       IF   ?PROC2-1
+PROC2  ....
+       ENDIF
+ 
+т. о. процедура PROCх будет  отассемблиро-
+вана лишь в  случае  обращения  к  ней  из
+вашего исходника.
+  Вот пожалуй  и  все, если  кто  чего  не
+понял, то думаю ему надо почитать  Help  к
+ALASM'y 4. 2 и все будет RULEZz_. а если и
+это не помогает то  можно  как  нибудь  со
+мной связаться и я попытаюсь объяснить еще
+разок.
+  Да, к  стати  там  в   приложении   есть
+исходники   моих   макросов    и    пример
+библиотеки процедур, а так-же исходник  их
+всех юзающий.
+__________________________________________
+
+
+
+MAINFILE.H
+----------
+
+        ORG     #8000
+        INCLUDE "LIBMACRO",1
+        LD      A,#45
+        CALL    CLRATR
+        SETIM2  SCROLER
+        BORDER  1
+        PAUSE   200
+        CALL    CLRSCR
+        BORDER  4
+        RET
+
+SCROLER PUSH    AF,BC,DE,HL,IX,IY
+        EX      AF,AF'
+        EXX
+        PUSH    AF,BC,DE,HL
+        CALL    SCROL
+        POP     HL,DE,BC,AF
+        EXX
+        EX      AF,AF'
+        EXX
+        POP     IY,IX,HL,DE,BC,AF
+        JP      56
+
+SCROL   LD      DE,BEGTXT
+        LD      A,(DE)
+        CP      "@"
+        CALL    Z,SCREND
+        CP      16
+        JR      Z,DEFCOL
+        CALL    GRAPH
+        LD      HL,#50FF
+        LD      C,8
+NEXTL   PUSH    BC
+        LD      B,31
+        LD      A,(DE)
+AT      AND     128
+        SCF
+        JR      NZ,SCROL1
+        CCF
+SCROL1  RL      (HL)
+        DEC     L
+        DJNZ    SCROL1
+        LD      L,#FF
+        INC     H
+        POP     BC
+        DEC     C
+        INC     DE
+        JR      NZ,NEXTL
+        LD      A,(AT+1)
+        SRL     A
+        JP      NZ,ONE
+        CALL    ATRSCR
+        LD      BC,(SCROL+1)
+        INC     BC
+        LD      (SCROL+1),BC
+        LD      A,128
+ONE     LD      (AT+1),A
+        RET
+
+GRAPH   LD      L,A
+        LD      H,0
+        ADD     HL,HL
+        ADD     HL,HL
+        ADD     HL,HL
+        LD      BC,(23606)
+        ADD     HL,BC
+        EX      DE,HL
+        RET
+SCREND  LD      BC,BEGTXT
+        LD      (SCROL+1),BC
+        RET
+DEFCOL  INC     DE
+        LD      A,(DE)
+        LD      (#5AFF),A
+        INC     DE
+        LD      BC,(SCROL+1)
+        INC     BC
+        INC     BC
+        LD      (SCROL+1),BC
+        JR      SCROL
+BEGTXT  DEFB    16,4,"GREEN "
+        DEFB    16,5,"CYAN "
+        DEFB    16,2,"RED "
+        DEFB    16,3,"MGNTA @"
+;5A80
+ATRSCR  LD      HL,#5AE0
+ATSCR   INC     HL
+        LD      A,(HL)
+        DEC     HL
+        LD      (HL),A
+        INC     HL
+        LD      A,L
+        CP      #FF
+        JR      NZ,ATSCR
+        RET
+
+        INCLUDE "LIBPROC",1
+
+
+
+PIXMACRO.H
+----------
+
+
+        MACRO   BORDER;COLOR(0-7)
+        LD      A,:0
+        OUT     (#FE),A
+        ENDM
+
+        MACRO   PAUSE;BYTE
+        LD      B,:0
+        HALT
+        DJNZ    $-1
+        ENDM
+
+        MACRO   SETIM2;LABEL
+        DI
+        LD      A,#5F
+        LD      I,A
+        LD      HL,:0
+        LD      (#5FFF),HL
+        IM      2
+        EI
+        ENDM
+
+        MACRO   TOALASM
+        LD      BC,#7FFD
+        LD      A,%00010100
+        OUT     (C),A
+        JP      #C000
+        ENDM
+
+        MACRO   GETMEM;LABEL,SIZE
+        IFN     ?SLOWMEM
+        SLOWMEM EQU     #6000
+        ENDIF
+        :0=SLOWMEM
+        SLOWMEM=SLOWMEM+:1
+        IFN     (('(#8000-SLOWMEM))&%10000000)
+        BORDER  2
+        TOALASM
+        ENDIF
+        ENDM
+
+        MACRO   GETSCR;LABEL,Y(PIX),X(SYM)
+        :0=#4000+(:2&#C0*32)+(:2&7*#100)+(:2&#38*4)+(:1&#1F)
+        ENDM
+
+        MACRO   GETTAB;LABEL,SIZE
+        IFN     ?SLOWMEM
+        SLOWMEM EQU     #6000
+        ENDIF
+        IFN     SLOWMEM&#FF
+        SLOWMEM=((SLOWMEM/256)+1)*256
+        ENDIF
+        :0=SLOWMEM
+        SLOWMEM=SLOWMEM+:1
+        IFN     (('(#8000-SLOWMEM))&%10000000)
+        BORDER  2
+        TOALASM
+        ENDIF
+        ENDM
+
+        MACRO   PAGE;NUMBER
+        IFN     ?IN7FFD
+        GETMEM  IN7FFD,1
+        LD      A,%00010000
+        LD      (IN7FFD),A
+        ELSE
+        LD      A,(IN7FFD)
+        ENDIF
+        AND     %11111000
+        OR      :0&7
+        LD      (IN7FFD),A
+        LD      BC,#7FFD
+        OUT     (C),A
+        ENDM
+
+        MACRO   SCR;0/1
+        IFN     ?IN7FFD
+        GETMEM  IN7FFD,1
+        LD      A,%00010000
+        LD      (IN7FFD),A
+        ELSE
+        LD      A,(IN7FFD)
+        ENDIF
+        AND     %11110111
+        OR      (:0&1)<3
+        LD      (IN7FFD),A
+        LD      BC,#7FFD
+        OUT     (C),A
+        ENDM
+
+        MACRO   COPY;SOURCE,DESTENATION,SIZE
+        LD      HL,:0
+        LD      DE,:1
+        LD      BC,:2-1
+        LDIR
+        ENDM
+
+        MACRO   DOWN;HL/DE/BC
+        LOCAL
+        INC     :C
+        AND     7
+        JR      NZ,LABEL
+        LD      A,:N:C
+        SUB     #ED
+        LD      :C,A
+        JR      NC,LABEL
+        LD      A,:R:C
+        SUB     8
+        LD      :C,A
+LABEL   ENDL
+        ENDM
+
+
+
+PIXPROC.H
+---------
+
+        IF0      ?CLRSCR-1
+CLRSCR  LD      HL,#4000
+        LD      DE,#4001
+        LD      BC,6143
+        LD      (HL),L
+        LDIR
+        RET
+        ENDIF
+
+        IF0      ?CLRATR-1       ;IN:    A-ATRIB
+CLRATR  LD      HL,#5800
+        LD      DE,#5801
+        LD      BC,767
+        LD      (HL),A
+        LDIR
+        RET
+        ENDIF

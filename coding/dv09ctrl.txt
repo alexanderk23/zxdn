@@ -1,0 +1,300 @@
+Из журнала Deja Vu #09, Кемерово, 1999
+
+
+
+ (C) Rezonance group
+__________________________________________
+
+           Интерфейс...
+
+   Очень  часто в программах требуется оп-
+росить клавиатуру, джойстик или мышь. Ниже
+приведены  процедуры, которыми  я хотел бы
+поделиться с читателями журнала.
+
+   Наиболее  часто  используется следующая
+методика:  в таблицу последовательно зано-
+сятся старший разряд требуемого ряда, мас-
+ка, указывающая на требуемую клавишу в ря-
+де, и байт, указывающий направление в фор-
+мате кемпстон джойстика.
+
+KEY1A LD     HL,KEY1F
+      LD     C,0
+      LD     A,(HL)
+KEY1B INC    HL
+      IN     A,(#FE)
+      AND    (HL)
+      INC    HL
+      JR     NZ,KEY1C
+      LD     A,(HL)
+      OR     C
+      LD     C,A
+KEY1C INC    HL
+      LD     A,(HL)
+      AND    A
+      JR     NZ,KEY1B
+      LD     A,C
+      RET
+KEY1F DEFB   #DF,#01,#01 ;P
+      DEFB   #EF,#08,#01 ;7
+      DEFB   #F7,#02,#01 ;2
+      DEFB   #DF,#02,#02 ;O
+      DEFB   #EF,#10,#02 ;6
+      DEFB   #F7,#01,#02 ;1
+      DEFB   #FD,#01,#04 ;A
+      DEFB   #EF,#04,#04 ;8
+      DEFB   #F7,#04,#04 ;3
+      DEFB   #FB,#01,#08 ;Q
+      DEFB   #EF,#02,#08 ;9
+      DEFB   #F7,#08,#08 ;4
+      DEFB   #7F,#01,#10 ;Sp
+      DEFB   #EF,#01,#10 ;0
+      DEFB   #F7,#10,#10 ;5
+      DEFB   0,0,0
+
+   Как  видно  из  текста программы, кроме
+стандартных Q, A, O, P, Space, здесь опра-
+шивается  Sinclear1 и Sinclear2. На выходе
+в регистре 'A' в формате кемпстон джойсти-
+ка  мы  имеем требуемое направление движе-
+ния.
+   Но лучше всего предоставить  выбор уст-
+ройства управления пользователю, и опраши-
+вать  только требуемое устройство. Это по-
+может  немножко  сэкономить   ресурсы там,
+где они очень требуются.
+   Что  может  быть  проще опроса кемпстон
+джойстика?!
+
+KEMPSTON
+      IN     A,(#1F)
+      AND    #1F
+      RET
+
+   Опрос Sinclear1, на выходе данные в ре-
+гистре 'A', преобразованные в формат кемп-
+стон  джойстика с помощью таблицы. Быстро,
+просто, удобно!
+
+SINCLEAR1
+      LD     A,#EF
+      IN     A,(#FE)
+      AND    #1F
+      XOR    #1F
+      LD     HL,SINCLEAR1F
+      LD     D,0
+      LD     E,A
+      ADD    HL,DE
+      LD     A,(HL)
+      RET
+SINCLEAR1F
+      DEFB   #00,#1F,#08,#18,#04
+      DEFB   #14,#0C,#1C,#01,#11
+      DEFB   #09,#19,#05,#15,#0D
+      DEFB   #1D,#02,#12,#0A,#1A
+      DEFB   #06,#16,#0E,#1E,#03
+      DEFB   #13,#0B,#1B,#07,#17
+      DEFB   #0F,#1F
+
+   Таблица  занимает 32 байта, при желании
+ее  можно сократить до 15, но усложнив тем
+самым процедуру. Стоит ли это делать?
+   То же самое, но для Sinclear2.
+
+SINCLEAR2
+      LD     A,#F7
+      IN     A,(#FE)
+      AND    #1F
+      XOR    #1F
+      LD     HL,SINCLEAR2F
+      LD     D,0
+      LD     E,A
+      ADD    HL,DE
+      LD     A,(HL)
+      RET
+SINCLEAR2F
+      DEFB   #00,#02,#01,#03,#04
+      DEFB   #06,#05,#07,#08,#0A
+      DEFB   #09,#0B,#0C,#0E,#0D
+      DEFB   #0F,#10,#12,#11,#13
+      DEFB   #14,#16,#15,#17,#18
+      DEFB   #1A,#19,#1B,#1C,#1E
+      DEFB   #1D,#1F
+
+   Быстрый,  но  довольно-таки  громоздкий
+вариант опроса клавиатуры. Данные по преж-
+нему на выходе в регистре 'A'.
+
+KEYscan1
+      LD     C,0
+      LD     A,#DF  ;P
+      IN     A,(#FE)
+      AND    #01
+      JR     NZ,KEYscan11
+      SET    0,C
+KEYscan11
+      LD     A,#DF  ;O
+      IN     A,(#FE)
+      AND    #02
+      JR     NZ,KEYscan12
+      SET    1,C
+KEYscan12
+      LD     A,#FD  ;A
+      IN     A,(#FE)
+      AND    #01
+      JR     NZ,KEYscan13
+      SET    2,C
+KEYscan13
+      LD     A,#FB  ;Q
+      IN     A,(#FE)
+      AND    #01
+      JR     NZ,KEYscan14
+      SET    3,C
+KEYscan14
+      LD     A,#7F
+      IN     A,(#FE)
+      AND    #01
+      JR     NZ,KEYscan15
+      SET    4,C
+KEYscan15
+      LD     A,C
+      RET
+
+   Но  мне  больше  нравится следующий ва-
+риант, компактный и понятный.
+
+KEYscan2
+      LD     C,0
+      LD     A,#DF  ;P
+      LD     DE,#0101
+      CALL   KEYscan2F
+      LD     A,#DF  ;O
+      LD     DE,#0202
+      CALL   KEYscan2F
+      LD     A,#FD  ;A
+      LD     DE,#0104
+      CALL   KEYscan2F
+      LD     A,#FB  ;Q
+      LD     DE,#0108
+      CALL   KEYscan2F
+      LD     A,#7F  ;Space
+      LD     DE,#0110
+      CALL   KEYscan2F
+      LD     A,C
+      RET
+KEYscan2F
+      IN     A,(#FE)
+      AND    D
+      RET    NZ
+      LD     A,C
+      OR     E
+      LD     C,A
+      RET
+
+   Какая  передовая программа сможет обой-
+тись  без  кемпстон  мыши. Процедура после
+вызова  изменяет  координаты в зависимости
+от передвижения мышки.
+
+MOUSE10
+      LD     HL,(XYkoor)
+      LD     BC,#FBDF
+      IN     A,(C)
+MOUSE11
+      LD     D,0
+      LD     (MOUSE11+1),A
+      SUB    D
+      CALL   NZ,MOUSE30
+      LD     B,#FF
+      IN     A,(C)
+MOUSE12
+      LD     D,0
+      LD     (MOUSE12+1),A
+      SUB    D
+      CALL   NZ,MOUSE40
+      LD     (XYkoor),HL
+      RET
+MOUSE30
+      JP     M,MOUSE35
+      ADD    A,H
+      LD     H,A
+      RET    NC
+      LD     H,#FF
+      RET
+MOUSE35
+      XOR    #FF
+      INC    A
+      LD     D,A
+      LD     A,H
+      SUB    D
+      LD     H,A
+      RET    NC
+      LD     H,0
+      RET
+MOUSE40
+      JP     M,MOUSE45
+      LD     E,A
+      LD     A,L
+      SUB    E
+      LD     L,A
+      RET    NC
+      LD     L,#0
+      RET
+MOUSE45
+      XOR    #FF
+      INC    A
+      ADD    A,L
+      LD     L,A
+      RET    NC
+      LD     L,#FF
+      RET
+
+   А  это  процедура  показывает, как всем
+этим можно пользоваться.
+
+CONTROL DEFB  0
+XYkoor  DEFW  0
+      LD     B,0
+      CALL   SINCLEAR1
+      OR     B
+      LD     B,A
+      CALL   SINCLEAR2
+      OR     B
+      LD     B,A
+      CALL   KEYscan1
+      OR     B
+      LD     (CONTROL),A
+      CALL   MOUSE10
+      RET
+
+   Теперь  осталось  определить, есть ли у
+пользователя  мышь или джойстик. На выходе
+в  регистре  'A' установлен 0-ой бит, если
+есть джойстик и 1-ый бит, если есть мышь.
+
+AUTOconfig
+      LD     E,0
+      LD     B,250
+A_config01
+      IN     A,(#1F)
+      AND    #1F
+      JR     NZ,A_config02
+      DJNZ   A_config01
+      SET    0,E
+A_config02
+      LD     B,250
+A_config03
+      LD     A,#FA
+      IN     A,(#DF)
+      XOR    #FF
+      JR     NZ,A_config04
+      DJNZ   A_config03
+      SET    1,E
+A_config04
+      LD     A,E
+      RET
+
+   Теперь, кажется, все. Надеюсь ничего не
+забыл. До новых встреч.
+------------------------------------------

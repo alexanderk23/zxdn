@@ -1,0 +1,1800 @@
+Из журнала ZX Format #6,
+Санкт-Петербург, 30.07.1997
+
+
+
+       Структура драйвера модема
+         для программы MMD 2.20
+
+(C) MAS
+_________________________________________
+
+    Для  работы  терминалки  "Macro Modem
+v2.20"  необходим  драйвер модема. Данный
+драйвер  выполняет все функции приёма/пе-
+редачи  информации,  а также обрабатывает
+состояние  телефонной  линии  и системных
+часов.
+
+    Драйвер  находиться на 6-й странице с
+адреса 49152 (#C000). Под его нужды отво-
+диться  все  16Кб данной страницы. Вход в
+драйвер  производиться через ТОЧКИ ВХОДА,
+расположеные  в  самом  начале  драйвера,
+т.е. с адреса 49152.
+
+
+               Внимание!
+          ДРАЙВЕР_НЕ_ДОЛЖЕН:
+
+ - портить  содержимое  регистров IX, IY,
+SP;
+ - изменять любые  ячейки памяти основной
+программы за исключением специально выде-
+леного буфера для обмена информацией;
+ - менять режим прерывания (статус преры-
+вания  можно менять - всё равно оно будет
+запрещено).
+
+
+         Входные точки драйвера:
+
+           УСТАНОВКА ДРАЙВЕРА
+
+D_INSTAL   EQU #C000
+    При  вызове функции в регитровой паре
+[HL]  будет находиться адрес рабочего бу-
+фера  для  приема/передачи данных. Данный
+буфер  расположен  в  основной  памяти, и
+имеет размер около 270 байт вверх, и око-
+ло  30  вниз от указаного значения. Обмен
+данными между основной программой и драй-
+вером производиться только через этот бу-
+фер.
+
+    При  инсталяци  в  этот буфер драйвер
+должен  записать  в  ASCII форме значение
+существующих  скоростей.  На  каждую ско-
+рость  отводиться 5 байт, всего скоростей
+- 8. Должна быть описана КАЖДАЯ скорость,
+если  драйвер  поддерживает меньшее коли-
+чество,  то описатели несуществующих ско-
+ростей заполняются кодом #00. Пример опи-
+сателя скоростей:
+
+    DEFB " 600 " ;1-я скорость 600 бод
+    DEFB "1800 " ;2-я скорость 1800 бод
+    DEFB "2400 " ;3-я скорость 2400 бод
+    DEFS 25      ;всего 3 скорости,
+                 ;остальные 5 отсутствуют
+
+
+    В  программе  учтено  то, что драйвер
+модема  может быть упакован. Поэтому про-
+цедура инсталяции вызывается ДВАЖДЫ. Т.е.
+при  первом  вызове происходит распаковка
+драйвера,  а  при  втором его инсталяция.
+Программа  использует  фляг  переноса для
+того, чтобы сообщить драйверу какой вызов
+происходит:
+ - если флаг переноса установлен - первый
+                                   вызов
+ - если флаг переноса сброшен - второй.
+
+
+
+    ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ДРАЙВЕРЕ
+
+D_COPYR    EQU #C003
+    Данная функция помещает в рабочий бу-
+фер  информацию о драйвере. Данной инфор-
+мацией  является  название драйвера и имя
+его  автора.  Размер  буфера  -  50 байт,
+строка  должна  заканчиваться  кодом  #00
+Пример функции D_COPYR:
+
+        LD DE,(WORK_ADR)  ;адрес буфера
+        LD HL,TEXT        ;адрес строки
+        LD BC,ETEXT-TEXT  ;длина строки
+        LDIR              ;перенесли и
+        RET               ;вернулись
+TEXT    DEFB "Vicomm-driver v2.95 "
+        DEFB "(C) 1997 *MAS*"
+        DEFB 0
+ETEXT
+
+
+     ЧТЕНИЕ СТАТУСА ЛИНИИ/ДРАЙВЕРА
+
+D_RD_STAT  EQU #C006
+    Данная  функция  возвращает параметры
+драйвера и линии, а также производит кор-
+рекцию данных для порта #FE.
+    При вызове данной функции в [A] нахо-
+дится текущий цвет бордюра.
+
+         При возврате из функции:
+  *  В регистре [B] различные биты харак-
+теризуют:
+
+ bit0 - статус линии: "1" модем подключен
+         к линии, "0" -отключен
+ bit1
+ bit2
+ bit3 если "1", то драйвер может набирать
+        номер тоновым способом.
+ bit4  если  "1"  -  нужно выключать TUR-
+       BO-режим  при вызове драйвера (для
+       всех модемов кроме XTR - нужно)
+ bit5 если "1", то драйвер позволяет уп-
+       равлять линией (подключать модем к
+       линии и отключать)
+ bit6 если "1",то в драйвере имеются часы
+ bit7 если "1",то в драйвере имеется тай-
+       мер
+
+  * В регистре [A] будут находится данные
+для  порта  #FE.  Если  драйвер для своих
+нужд  не использует порт #FE, то содержи-
+мое  аккумулятора  не  должно изменяться.
+Например: Vicomm с "прибамбасом" v1.2 пе-
+редает  данные  и  управляет линией через
+порт #FE, и при вызове данная функция ус-
+тановит 3-й и 5-й биты аккумулятора в со-
+ответствии со своими нуждами.
+
+
+     УСТАНОВКА ПЕРЕД ОПРОСОМ ЛИНИИ
+
+D_WAIT_INS EQU #C009
+    Данная  функция вызывается непосредс-
+твенно перед циклом вызовов функций опро-
+са линии. Если в драйвере необходимо выс-
+тавить   какие-либо  переменные,  то  эта
+функция этим и занимается.
+    При вызове данной функции в аккумуля-
+торе  будет  находиться число от 0 до 15,
+характеризующее громкость с которой функ-
+ции опроса линии должны выводить звук ли-
+нии на встроеный динамик.
+    Выдор  устройства для вывода звука не
+оговаривается (можно использовать beeper,
+AY, COVOX, и т.д.) При выводе звука на AY
+есть одно ограничение: если звук выводить
+не  нужно,  т.е. [A]=#00, то изменять со-
+держимое регистров музпроцессора не реко-
+мендуется.
+
+
+              ОПРОС ЛИНИИ
+
+D_WAIT_LN  EQU #C00C
+    Данная функция производит опрос линии
+в течении некоторого небольшого промежут-
+ка времени.
+
+   Данная функция возвращает на выходе:
+
+ *  Если флаг переноса установлен, то ни-
+чего  не  произошло,  при этом в регистре
+[B]  указывается количество произведенных
+опросов линии, а в регистре [C] - сколько
+всого  должно  быть опросов. Данные в ре-
+гистрах  [B]  и [C] позволяют более-менее
+ритмично  мигать  курсором  и  опрашивать
+клавиатуру.
+    Например,  если  функция осуществляет
+15  опросов  линии,  и при наличии шума в
+линии  в любом из циклов опроса возвраща-
+ется. При этом в регистре [B] указывается
+сколько опросов функция успела выполнить.
+Если  функция  опроса  линии  выполняется
+всегда  строго  фиксированое  время, то в
+регистр [B] заносится #01
+    Содержимое регистра [C] позволяет ре-
+гулировать  частору мугания курсора и оп-
+роса  клавиш.  Чем  больше это число, тем
+реже и ритмичнее мигает курсор.
+
+ * Если при возврате из функции D_WAIT_LN
+флаг  переноса  сброшен, то произошло ка-
+кое-то событие. В регистре [A] указывает-
+ся его код:
+
+  #01: был принят блок. Принятых блок на-
+ходится  в  буфере  модема, а его длина в
+регистровой  паре [BC] В регистре [D] на-
+ходится  скорость, на которой был передан
+данный  блок. Если скорость определить не
+удалось, то в [D] заноситься #80
+  #02: были обнаружены короткие гудки
+  #03: был обнаружен вызов (звонок)
+
+
+            ДОЛГОЕ ОЖИДАНИЕ
+
+D_WAIT_BLC EQU #C00F
+    Данная  функция производит долгий оп-
+рос  линии  примерно  100.4  секунды. При
+возврате функции:
+
+ * Если флаг  переноса установлен, то ни-
+чего не было принято
+ * Если флаг переноса сброшен, то приняли
+блок:
+   Принятых блок находится в буфере моде-
+ма, а его длина в регистровой паре [BC] В
+регистре [D] находится скорость, на кото-
+рой  был  передан  данный блок. Если ско-
+рость определить не удалось, то в [D] за-
+носиться #80
+
+
+            ПЕРЕДАЧА ДАННЫХ
+
+D_TRANSMIT EQU #C012
+    Данная  функция передает блок данных.
+Сами данные находяться в буфере модема, в
+регистровой паре [BC] находится длина пе-
+редаваемого блока, в [A] - скорость пере-
+дачи.
+
+
+       ПОДКЛЮЧИТЬ МОДЕМ К ЛИНИИ
+
+D_ON_LINE  EQU #C015
+
+       ОТКЛЮЧИТЬ МОДЕМ ОТ ЛИНИИ
+
+D_OFF_LINE EQU #C018
+
+    Данные  функции  просто "снимают" или
+"кладут"  трубку. В функцию ничего не пе-
+редается и функции ничего не возвращают.
+
+
+             НАБРАТЬ НОМЕР
+
+D_CALL     EQU #C01B
+    Данная функция осуществляет набор но-
+мера.  При вызове функции модем уже подк-
+лючен  к линии, и в регистровой паре [HL]
+находится адрес буфера с телефонным номе-
+ром,   который   следует  набрать.  Номер
+представляет собой ASCII строку, заканчи-
+вающуюся  кодом #00. Если в строке встре-
+тится символ "-", то при наборе его необ-
+ходимо  пропустить. Во время набора необ-
+ходимо  анализировать  нажатие на клавиши
+<ПРОБЕЛ>, и при её нажатии произвести вы-
+ход из функции.
+
+        Также при входе в функцию:
+ * в  регистре  [A]  указан способ набора
+номера:  "0"  - импульсный, "1" - тональ-
+ный.
+ * в регистре [B] указан  период импульса
+в ms
+ * в регистре [C] межцифровая пауза ms/10
+
+        Данная функция возвращает:
+ * Флаг переноса сброшен - набор номера
+     произведён успешно.
+ * Флаг переноса установлен - ошибка,
+     код ошибки в [A]:
+   #00 ОШИБКА НАБОРА
+   #01 НЕТ ДЛИННОГО ГУДКА
+   #02 ВЫПОЛНЕНИЕ ПРЕРВАНО,нажат <ПРОБЕЛ>
+
+
+       ДАННАЯ ФУНКЦИЯ ВЫЗЫВАЕТСЯ
+        ПРИ ОБНАРУЖЕНИИ ЗВОНКА.
+     МОДЕМ ПОДКЛЮЧАЕТСЯ К ЛИНИИ И
+          ОПРЕДЕЛЯЕТСЯ НОМЕР.
+
+D_AON      EQU #C01E
+           При вызове функции:
+ [A] число запровое
+ [B] пауза перед запросом
+ [C] количество цифр в номере
+ [D] чувствительность к ответу АТС
+ [E] чувствительность линии
+
+    При выходе из функции в буфере модема
+находиться ASCII строка с сообщением, за-
+канчивающаяся кодом #00.
+
+         УСТАНОВКА СОЕДИНЕНИЯ
+
+               АКТИВНАЯ
+
+SET_CON_A  EQU #C021
+
+               ПАСИВНАЯ
+
+SET_CON_P  EQU #C024
+
+    Данные  функции пытаются выбрать наи-
+лудшую  скорость обмена. Функция активной
+установки  передает  на  разных скоростях
+данные,  а потом проверяет как они приня-
+лись. Функция пассивной установки вначале
+принимает  данные, а затем сообщает об их
+приеме.   Конктерная   реализация  данных
+функций не оговаривается.
+
+    Обе  функции возвращают текстовое со-
+общение  о  выбраной  скорости. Сообщение
+находиться в буфере модема и заканчивает-
+ся кодом #00. Также при возврате из функ-
+ции в аккумулятор записывается номер выб-
+раной  скорости,  или  #80, если скорость
+выбрать не удалось.
+    В   случае  невозможности  выполнения
+функции возвращаются с установленным фла-
+гом переноса.
+
+           УСТАНОВИТЬ ВРЕМЯ
+
+D_SET_TIME EQU #C027
+    Данная  функция  позволяет установить
+текущее  время. При вызове функции данные
+находится  в регистрах [A], [B], [C]: [A]
+- часы, [B] - минуты, [C] - секунды. Дан-
+ные представлены в двоично-десятичном ви-
+де.
+    В  случае ошибки функция возвращается
+с установленным флагом переноса.
+
+             СЧИТАТЬ ВРЕМЯ
+
+D_RD_TIME  EQU #C02A
+    Данная функция позволяет узнать теку-
+щее время. При возврате из функции данные
+должны  находится  в  регистрах [A], [B],
+[C]  в  двоично-десятичном  виде. В [A] -
+часы, [B] - минуты, [C] - секунды. В слу-
+чае  ошибки  функция возвращается с уста-
+новленным флагом переноса.
+
+           КОРРЕКЦИЯ ВРЕМЕНИ
+D_CALC_TIM EQU #C02D
+    Данная  функция  вызывается несколько
+раз  в  минуту. Если используемые часы не
+являются  полностью автономными (например
+часы представляют собой счетчик секундных
+импульсов,  подключенный  к  паралельному
+порту), и требуется коррекция времени, то
+для этого используется данная функция.
+    Внимание!  Данная функция должна сох-
+ранять значение ВСЕХ регистров!
+
+           УСТАНОВИТЬ ТАЙМЕР
+
+D_SET_ALR  EQU #C036
+    Если  драйвер поддерживает режим тай-
+мера, то данная функция должна установить
+таймер  на  указаное  в  регистровой паре
+[BC] секунд.
+    В  случае ошибки функция возвращается
+с установленным флагом переноса.
+
+          ДОБАВИТЬ К ТАЙМЕРУ
+
+D_ADD_ALR  EQU #C039
+    Данная функция добавляет к оставшему-
+ся  времени  указаное  в регистровой паре
+[BC] секунд.
+    В  случае ошибки функция возвращается
+с установленным флагом переноса.
+
+            ВРЕМЯ ИСТЕКЛО?
+
+D_RD_ALR   EQU #C03C
+    Данная функция проверяет подошло-ли к
+концу время, установленое в таймере. Если
+время  вышло,  то  функция возвращается с
+установленым флагом переноса.
+
+
+                Внимание!
+    В программе Macro Modem v2.20 функции
+работы с часами/таймером не используются,
+они зарезервированы под будующие версии.
+
+             _____
+
+ Мы  предлагаем  Вашему  вниманию  пример
+драйвера  под  самый  простейший "Модем",
+распространенный в С-Пб.
+
+
+CALLING EQU 01
+
+;ФЛАГ РАЗРЕШЕНИЯ НАБОРА НОМЕРА
+;ЕСЛИ "1", ТО ДРАЙВЕР БУДЕТ НАБИРАТЬ
+;НОМЕР И РЕАГИРОВАТЬ НА ЗВОНКИ
+;ЕСЛИ "0" - НЕ БУДЕТ, НО И НЕ БУДЕТ
+;ЗАВИСАТЬ ПРИ ОТСУТСТВИИ "ПРИБАМБАСА"
+
+        ORG #C000
+
+;КЕРНАЛЬ ПОДПРОГРАММ
+
+        JP D_INSTAL
+        JP D_NAME
+        JP D_RD_STAT
+        JP D_WAIT_INS
+        JP D_WAIT_LN
+        JP D_WAIT_BLC
+        JP D_TRANSMIT
+        JP D_ON_LINE
+        JP D_OFF_LINE
+        JP D_CALL
+        JP D_AON
+        JP SET_CON_A
+        JP SET_CON_P
+        JP D_SET_TIME
+        JP D_RD_TIME
+        JP D_CAL_TIM
+        JP D_SET_ALR
+        JP D_ADD_ALR
+        JP D_RD_ALR
+
+;РАБОЧИЕ ПЕРЕМЕННЫЕ ДРАЙВЕРА
+
+LINE_STATUS DB 0
+SPEED       DB 0
+LCOUNT_A    DB 0
+LCOUNT_B    DB 0
+LCOUNT_C    DB 0
+ZERO_BYTE   DB 0 ;БАЙТ ИДУЩИЙ ПЕРЕД
+                 ;ДЛИНОЙ В БЛОКЕ
+SYNC_TABL   DS 15
+
+;УСТАНОВКА ДРАЙВЕРА
+;in: [HL] АДРЕС БУФЕРА МОДЕМА
+;out: В БУФЕРЕ В ASCII ФОРМЕ ЗНАЧЕНИЯ
+;СКОРОСТЕЙ.
+;НА КАЖДУЮ СКОРОСТЬ ПО 4 БАЙТА,
+;КОЛ-ВО СКОРОСТЕЙ 8, ЗАКАНЧИВАЕТСЯ #00
+
+D_INSTAL RET C
+
+;ЕСЛИ ДРАВЕР ВЫЗЫВАЕТСЯ С УСТАНОВЛЕНЫМ
+;ФЛАГОМ CY - ТО ЭТО ЗАПУСК ДЛЯ
+;РАСПАКОВКИ, И ЕГО ИГНОРИРУЕМ
+
+        LD (MOD_BUFF1),HL ;ЗАПИСАЛИ В
+        LD (MOD_BUFF2),HL ;НУЖНЫЕ МЕСТА
+        LD (MOD_BUFF3),HL ;АДРЕС
+        LD (MOD_BUFF4),HL ;БУФЕРА
+
+;ПЕРЕБРАСЫВАЕМ В БУФЕР СКОРОСТИ ДРАЙВЕРА
+
+        EX DE,HL
+        LD HL,SPD_MODEM
+        LD BC,ESPD_MODEM-SPD_MODEM
+        LDIR
+        RET
+
+SPD_MODEM
+        DB " 600 ","1800 ","2400 "
+        DS 5*5
+ESPD_MODEM
+
+;ЧТЕНИЕ ИНФОРМАЦИИ О ДРАЙВЕРЕ
+;out: ПО [DE] ЗАПИСЫВАЕТСЯ НАЗВАНИЕ
+;ДРАЙВЕРА (ДО 80-ТИ СИМВОЛОВ),
+;ЗАКАНЧИВАЕТСЯ КОДОМ #00
+
+D_NAME   LD HL,NAME_MODEM
+         LD BC,ENAME_MODEM-NAME_MODEM
+         LD DE,(MOD_BUFF1)
+         LDIR
+         RET
+
+NAME_MODEM
+        DB "Vicomm-modem driver v1.04  "
+        DB "(C) 1997 *MAS*",0
+ENAME_MODEM
+
+;ЧТЕНИЕ СТАТУСА ЛИНИИ/ДРАЙВЕРА
+;in: [A] ЦВЕТ БОРДЮРА
+
+;out: [A] - ДАННЫЕ ДЛЯ ПОРТА #FE
+;     Т.К. ЦВЕТ БОРДЮРА + БИТЫ УПРАВЛЕНИЯ
+;     ЛИНИЕЙ И ВЫХОД ЛИНИИ
+;[B]: ПО БИТАМ:
+;   0 СТАТУС ЛИНИИ (СВОБОДНА/ЗАНЯТА)
+;   3 наличие тонового набора
+;   4 ВЫКЛЮЧАТЬ TUBRO ПРИ ВЫЗОВЕ ДРАЙВЕРА
+;   5 УПРАВЛЕНИЕ ЛИНИЕЙ
+;   6 НАЛИЧИЕ ТАЙМЕРА
+;   7 НАЛИЧИЕ ЧАСОВ
+
+D_RD_STAT
+        AND 7: LD C,A
+        LD A,(LINE_STATUS)
+        LD B,A: OR C
+        OUT (#FE),A: LD (BORDER_0+1),A
+        OR  #08: LD (BORDER_1+1),A
+        PUSH AF
+        XOR A: INC B: DEC B
+        JR Z,$+3: INC A
+
+      IF CALLING
+
+;ВЫКЛЮЧАТЬ TURBO, ЕСТЬ УПРАВЛЕНИЕ ЛИНИЕЙ,
+;НЕТ ЧАСОВ, ТАЙМЕРА
+
+        OR %00110
+      ELSE
+
+;ВЫКЛЮЧАТЬ TURBO, НЕТ УПРАВЛЕНИЯ ЛИНИЕЙ,
+;НЕТ ЧАСОВ, ТАЙМЕРА, ТРУБКА СНЯТА
+
+        OR %00010001
+      ENDIF
+        LD B,A
+        POP AF: RET
+
+;СНЯТЬ ТРУБКУ
+
+D_ON_LINE  LD A,#20: JR ON_OFF_L
+
+;ПОЛОЖИТЬ ТРУБКУ
+
+D_OFF_LINE XOR A
+
+ON_OFF_L
+
+;ИЗМЕНЕНИЕ СТАТУСА ЛИНИИ, ЕСЛИ НЕТ
+;УПРАВЛЕНИЯ ЛИНИЕЙ - СРАЗУ ВОЗВРАТ
+
+      IF CALLING
+         LD (LINE_STATUS),A
+         LD B,A: LD A,(BORDER_0+1)
+         OR B: LD (BORDER_0+1),A
+         OUT (#FE),A
+         OR #08: LD (BORDER_1+1),A
+      ENDIF
+         RET
+
+;НАБРАТЬ НОМЕР, ТРУБКА УЖЕ СНЯТА
+; in:
+; [HL] - АДРЕС БУФЕРА С НОМЕРОМ
+;  [A] - 0 pulse,  1 tone
+;  [B] период импульса ms, станд. 100
+;  [C] межцифровая пауза ms/10
+; CY=1 ОШИБКА, КОД ОШИБКИ В [A]:
+;    0 ОШИБКА НАБОРА
+;    1 НЕТ ДЛИННОГО ГУДКА
+;    2 ПРЕРЫВАНИЕ
+; CY=0 СОЕДИНЕНИЕ УСТАНОВЛЕНО:
+;ВОЗВРАЩАЮТСЯ ДАННЫЕ КАК ИЗ SET_CON_P
+
+D_CALL
+      IF CALLING
+        LD (ID_CALL+1),HL
+        PUSH BC
+
+;УСТАНАВЛИВАЕМ П/П СКАНИРОВАНИЯ ЛИНИИ
+
+        XOR A: CALL D_WAIT_INS
+        POP BC
+        LD A,C: LD (CDEL_COD+1),A
+
+;ЗАДАН ПЕРИОД ИМПУЛЬСА, ПО СТАНДАРТУ
+;ДАЕТСЯ 2/5 ПЕРИОДА ЛИНИЯ ЗАМКНУТА,
+;И 3/5 ПЕРИОДА ЛИНИЯ РАЗОМКНУТА
+;ДЕЛИМ ПЕРИОД НА 5
+
+        LD A,B: LD B,0
+DIV5    SUB 5: JR C,EDIV5
+        INC B: JR DIV5
+EDIV5   INC B: DEC B: JR NZ,$+3: INC B
+
+        LD A,B: RLCA    ;2/5 ПЕРИОДА
+        LD (CDEL_1+1),A
+
+        ADD A,B         ;3/5 ПЕРИОДА
+        LD (CDEL_0+1),A
+
+;ЗАПИСЫВАЕМ ЗНАЧЕНИЯ ВЫДАВАЕМЫЕ В ПОРТ
+;#FE ДЛЯ ЗАМЫКАНИЯ/РАЗМЫКАНИЯ ЛИНИИ
+
+        LD A,(BORDER_0+1): AND #0F
+        LD (DCAL_OFF+1),A
+        LD A,(BORDER_1+1): OR #20
+        LD (DCAL_ON+1),A
+
+;МАСЕНЬКАЯ ПАУЗА ПЕРЕД НАБОРОМ
+
+        EI: LD B,45: HALT: DJNZ $-1
+
+;КОНТРОЛЬ ДЛИННОГО ГУДКА:
+;ДЕЛАЕМ 200 ОПРОСОВ ЛИНИИ, ЕСЛИ
+;ПОЙМАЕМ 30 РАЗ ПОДРЯД ГУДОК - ВСЕ ОК
+
+         LD BC,200*256+30
+WAIT_DIA CALL WAIT_CALL
+         JR C,DWAIT_R   ;ГУДКА НЕТ
+         DEC C
+         JR Z,ID_CALL ;ПОЙМАЛИ 30 РАЗ
+         JR DWAIT_N
+
+;ЕСЛИ ХОТЬ РАЗ ПОТЕРЯЛИ ГУДОК - УСТАНО-
+;ВИТЬ СЧЕТЧИК ЗАНОВО НА 30
+
+DWAIT_R  LD C,30
+
+;ЕСЛИ НАЖАТ ПРОБЕЛ - ВЫХОД
+
+DWAIT_N LD A,#7F: IN A,(#FE)
+        RRCA: JR NC,BRK_CALL
+        DJNZ WAIT_DIA
+
+NO_DIAL   LD A,1: SCF: RET ;НЕТ СИГНАЛА
+BRK_CALL  LD A,2: SCF: RET ;ПРЕРЫВАНИЕ
+ERRD_CALL XOR A: SCF: RET  ;ОШИБКА
+
+ED_CALL XOR A: RET ;НОМЕР НАБРАН
+
+;СОБСТВЕННО НАБОР НОМЕРА
+ID_CALL LD HL,0 ;ЗДЕСЬ БУДЕТ АДРЕС БУФЕРА
+        LD A,(HL): INC HL
+        LD (ID_CALL+1),HL
+
+        OR A         ;НАЙДЯ КОД #00
+        JR Z,ED_CALL ;ОКАНЧИВАЕМ НАБОР
+;СИМВОЛЫ "-", "(", ")", " " ИГНОРИРУЕМ
+        CP "-": JR Z,ID_CALL
+        CP "(": JR Z,ID_CALL
+        CP ")": JR Z,ID_CALL
+        CP " ": JR Z,ID_CALL
+
+        SUB "0": JR C,ERRD_CALL
+;ЕСЛИ ЭТО НЕ ЦИФРА - ОШИБКА НАБОРА
+
+;ЦИФРЕ "0" СООТВЕТСТВУЕТ 10 ИМПУЛЬСОВ
+        JR NZ,$+4: LD A,10
+        CP 11: JR NC,ERRD_CALL
+
+        LD B,A
+
+;НАБИРАЕМ ЦИФРУ, В [B] КОЛ-ВО ИМПУЛЬСОВ
+
+CALL_C
+
+;РАЗРЫВ ЛИНИИ НА 60ms (3/5)
+
+DCAL_OFF LD A,0
+         OUT (#FE),A
+
+CDEL_0   LD A,0
+DDEL_0   LD C,248
+         DEC C: JP NZ,$-1
+         DEC A: JP NZ,DDEL_0
+
+;ЗАМЫКАНИЕ ЛИНИИ И ПАУЗА 40ms (2/5)
+
+DCAL_ON LD A,0
+        OUT (#FE),A
+
+;ЗАДЕРЖКА НА [A] ms
+CDEL_1  LD A,0
+DDEL_1  LD C,248
+        DEC C: JP NZ,$-1
+        DEC A: JP NZ,DDEL_1
+
+         DJNZ CALL_C
+
+;МЕЖЦИФРОВАЯ ПАУЗА В 600ms
+
+CDEL_COD LD B,0
+W_CDEL  NOP: NOP: LD DE,1457
+        DEC DE: LD A,D
+        OR E: JP NZ,$-3
+        DJNZ W_CDEL
+
+;ЕСЛИ НАЖАТ ПРОБЕЛ - ВЫХОД,ИНАЧЕ НАБИРАЕМ
+;НОМЕР ДАЛЬШЕ
+        LD A,#7F: IN A,(#FE)
+        RRCA: JR NC,BRK_CALL
+        JR ID_CALL
+
+;ОПРАШИВАЕМ ЛИНИЮ 32 РАЗА
+
+WAIT_CALL DI: PUSH BC
+        LD B,32
+        LD HL,0
+
+CALL_DIAL LD DE,#0B59
+         CALL SCAN_IN
+         CALL DELAY_37
+         LD E,A: LD D,0: ADD HL,DE
+         DJNZ CALL_DIAL
+
+         POP BC
+;КОНТРОЛЬ ГУДКА, СРЕДН. АРИФМ.
+;ЗНАЧЕНИЕ ЧАСТОТЫ ЗА 32 ОПРОСА
+        SRA H: RR L : SRA H: RR L
+        SRA H: RR L : SRA H: RR L
+        SRA H: RR L
+        LD A,L: SRA A
+
+;В ИНТЕРВАЛЕ 15000.250 - ЧАСТОТА ГУДКА
+        CP 150: RET C
+        CP 250: CCF
+        RET
+
+      ELSE
+        XOR A: SCF: RET
+      ENDIF
+
+;ВЫЗЫВАЕТСЯ ПРИ ОБНАРУЖЕНИИ ЗВОНКА.
+;СНИМАЕТСЯ ТРУБКА. + ОПРЕДЕЛЕНИЕ НОМЕРА
+;(ЗДЕСЬ ОТСУТСТВУЕТ!)
+
+;out: MOD_BUFF НОМЕР В ASCII, В КОНЦЕ 0
+
+D_AON   CALL D_ON_LINE
+        LD B,75: EI: HALT: DJNZ $-2: DI
+;ПОСЛЕ СНЯТИЯ ТРУБКИ ПАУЗА В 1.5 СЕК.
+;ЕСЛИ ЕСТЬ АОН, ТО ОН МОЖЕТ ОПРЕДЕЛИТЬ
+;НОМЕР
+
+;ПЕРЕБРАСЫВАЕМ В БУФЕР МОДЕМА СООБЩЕНИЕ
+;О СНЯТИИ ТРУБКИ
+
+MOD_BUFF3 EQU $+1: LD DE,#1
+         LD HL,AON_TXT
+         LD BC,EAON_TXT-AON_TXT
+         LDIR
+         RET
+
+AON_TXT
+    DB 13,"Модем подключен к линии",13,0
+EAON_TXT
+
+;ДВЕ НИЖЕСЛЕДУЮЩИЕ П/П ИСПОЛЬЗУЮТСЯ
+;КАК "ЗАГЛУШКИ", Т.К. АЛГОРИТМ АВТОВЫБОРА
+;СКОРОСТИ ЕЩЕ НЕ ОБДУМЫВАЛСЯ
+
+;установить соединение, передача
+;Т.Е. ВНАЧАЛЕ "ПЕРЕДАЕТ", ПОТОМ "СЛУШАЕТ"
+
+SET_CON_A
+
+;установить соединение, прием
+;Т.Е. ВНАЧАЛЕ "СЛУШАЕТ", ПОТОМ "ПЕРЕДАЕТ"
+
+SET_CON_P
+MOD_BUFF4 EQU $+1: LD DE,0
+      IF CALLING
+        PUSH HL
+        LD (HL),13: LD BC,1: XOR A
+        CALL D_TRANSMIT
+        POP HL
+      ENDIF
+
+;УСТАНОВКА СОЕДИНЕНИЯ
+;В MOD_BUFF ВОЗВРАЩАЕТСЯ ТЕКСТОВОЕ СООБЩ.
+;О СОЕДИНЕНИИ, В КОНЦЕ - КОД #00
+;В [A] УСТАНОВЛЕНАЯ СКОРОСТЬ, ИЛИ #80
+;ЕСЛИ ОНА НЕОПРЕДЕЛЕНА
+         LD HL,CARR_TXT
+         LD BC,ECARR_TXT-CARR_TXT
+         LDIR
+         LD A,#80 ;СКОРОСТЬ НЕОПРЕДЕЛЕНА
+         RET
+
+CARR_TXT
+    DB 13,"Соедение установлено",13,0
+ECARR_TXT
+
+;ИНСТАЛЯЦИЯ ПЕРЕД СКАНИРОВАНИЕМ ЛИНИИ
+;В [A] - ГРОМКОСТЬ ВЫВОДА ЗВУКА ЛИНИИ
+;ЧЕРЕЗ AY
+
+D_WAIT_INS
+        LD HL,#4000: LD (LCOUNT_A),HL
+        AND #0F: SET 6,A: LD (SOUND+1),A
+        JR Z,D_WAIT_INS1
+         LD BC,#00FD: LD A,7: OUT (C),A
+         LD B,#BF: LD A,#3F: OUT (C),A
+
+D_WAIT_INS1
+        XOR A: LD (LAST_DT+1),A
+        LD (COUNT0+1),A
+        LD (COUNT1+1),A
+        LD (LAST0+1),A
+        LD (OFFCOU+1),A
+        RET
+
+;СКАНИРОВАНИЕ ЛИНИИ
+;out
+;CY=1: НИЧЕГО
+; [B] КОЛИЧЕСТВО ЦИКЛОВ ОПРОСА
+; [C] СКОЛЬКО ВСЕГО ДОЛЖНО БЫТЬ ЦИКЛОВ
+;CY=0, ;[A] - КОД:
+;1 - ПРИНЯТ БЛОК, 2 - ЗАНЯТО, 3 - ВЫЗОВ
+
+D_WAIT_LN
+        DI
+        LD HL,0
+        LD DE,16*256+12  ;11
+
+        LD BC,#00FD: LD A,8: OUT (C),A
+        LD A,(SOUND+1)
+        AND #0F: JR Z,$+4: LD B,#BF
+
+;ОПРОС ЛИНИИ НА СИНХРОСИГНАЛ БЛОКА И
+;КОНТРОЛЬ КОТОТКИХ ГУДКОВ, ВНАЧАЛЕ
+;СЧИТАЕМ СРЕДН. АРИФМ. ЗНАЧЕНИЕ ЧАСТОТЫ
+;ЗА 16 ОПРОСОВ
+
+MDLOOP1
+        IN A,(#FE): AND #20
+
+;АНАЛИЗ/НЕТ СИГНАЛА ВЫЗОВА
+    IF CALLING
+        JP Z,RING : ELSE: JP $+3
+    ENDIF
+
+        CALL IN_LINE_F
+        CP 11: JP C,MDLOOP2
+        CP 89: JP NC,MDLOOP2
+        DEC E: JP Z,INPUT_BLOCK ;БЛОК?
+MDLOOP2 ADD A,L: LD L,A
+        JR NC,$+3: INC H
+        DEC D: JP NZ,MDLOOP1
+
+        SRA H: RR L : SRA H: RR L
+        SRA H: RR L : SRA H: RR L
+        LD A,L: SRA A
+
+;В ИНТЕРВАЛЕ 15000.250 - ЧАСТОТА ГУДКА
+;ЕСЛИ ГУДОК, ТО А=1 ИНАЧЕ А=0
+        CP 150: JR C,TST_OFFL
+        CP 250: JR C,TST_ONL
+
+TST_OFFL XOR A: JR $+4
+TST_ONL  LD A,1
+
+;ЕСЛИ СОСТ. СИГНАЛА НЕ ИЗМЕНИЛОСЬ, ТО
+;ПРОСТО УВЕЛИЧИТЬ СЧЕТЧИК. ЕСЛИ
+;ИЗМЕНИЛОСЬ, ТО ПЕРЕКЛЮЧИТЬ СЧЕТЧИК
+
+LAST_DT  CP 0: LD (LAST_DT+1),A
+         JR NZ,NEW_DTL
+
+ADR_IDL  LD HL,0: INC (HL): LD A,(HL)
+         CP 200: CALL NC,D_WAIT_INS1
+         JR E_WAIT_LN
+
+;ЧАСТОТА ИЗМЕНИЛАСЬ:
+
+NEW_DTL DEC A: JR Z,NEW_DTL1
+
+;СТАЛА "0": ПЕРЕКЛЮЧАЕМ СЧЕТЧИК
+        LD HL,COUNT0+1 : LD (HL),0
+        LD (ADR_IDL+1),HL
+
+;ЕСЛИ БЫЛО >4 ЕДЕНИЦ И >4 НУЛЕЙ ПОДРЯД,
+;ЗНАЧИТ ПОЙМАЛИ СИГНАЛ ОТБОЯ
+
+COUNT1  LD A,0: CP 4: JP C,RES_OFF
+LAST0   LD A,0: CP 4: JP C,RES_OFF
+
+;ПОЙМАВ 3 ГУДКА ОТКЛЮЧИТСЯ
+
+OFFCOU  LD A,0: INC A: LD (OFFCOU+1),A
+        CP 3: JR Z,BUSY_FOUND
+
+;ЧАСТОТА СТАЛА "1": ПЕРЕКЛЮЧАЕМ СЧЕТЧИК
+NEW_DTL1 LD HL,COUNT1+1 : LD (HL),0
+        LD (ADR_IDL+1),HL
+COUNT0  LD A,0
+JPE_WAIT_LN LD (LAST0+1),A
+        JR E_WAIT_LN
+
+RES_OFF XOR A
+        LD (COUNT0+1),A
+        LD (COUNT1+1),A
+        JR JPE_WAIT_LN
+
+BUSY_FOUND
+        OR A: LD A,2 ;CY=0, A=2 "ЗАНЯТО"
+        RET
+
+;ПОЙМАЛИ ЗВОНОК, ПРОВЕРКА НА РЕАЛЬНОСТЬ
+;ЕСЛИ СИГНАЛ ВЫЗОВА БУДЕТ ДЕРЖАТЬСЯ
+;НЕКОТОРОЕ ВРЕМЯ - ЗНАЧИТ ВЫЗОВ В НАТУРЕ
+
+RING    LD C,2
+RING1   LD B,30: NOP: DJNZ $-1
+        IN A,(#FE): AND #20
+        JP NZ,D_WAIT_LN
+        DEC C: JR NZ,RING1
+
+;ЗВОНОК ЕСТЬ, ОЖИДАЕМ ЕГО ОКОНЧАНИЯ
+
+RING2   IN A,(#FE): AND #20: JR Z,RING2
+        LD A,3   ;CY=0, A=3 "ЗВОНОК"
+        RET
+
+E_WAIT_LN LD BC,#0101
+          SCF: RET  ;CY=1 - НИЧЕГО НЕТ
+
+;ОПРОС ВХОДА: В [A] БУДЕТ ЧАСТОТА СИГНАЛА
+
+IN_LINE_F PUSH HL: PUSH DE
+          LD DE,(LCOUNT_A)
+SOUND     LD L,0
+
+LP_TIN_F INC E: JP Z,END_TIN_F
+         INC E: JP Z,END_TIN_F
+         IN A,(#FE)
+          RLCA: RLCA: SBC A,A
+          AND L: NOP: OUT (C),A
+         AND #40: XOR D: JP Z,LP_TIN_F
+        XOR D: LD (LCOUNT_B),A
+
+RET_TIN_F LD A,E
+        LD HL,LCOUNT_A
+        SUB (HL): LD (HL),A
+        LD A,E
+        POP DE: POP HL
+        RET
+
+END_TIN_F DEC E: JR RET_TIN_F
+
+;ПОЙМАЛИ СИНХРОСИГНАЛ, ПРИНИМАЕМ БЛОК
+
+INPUT_BLOCK
+        CALL IN_LINE
+        CALL CONTR_SPEED
+        CALL LOAD_DATA
+        RET C
+
+E_LOAD_DT LD A,(SPEED): LD D,A
+BLOCK_LEN EQU $+1: LD BC,#0101
+;CY=0   УСПЕШНО ПРИНЯЛИ БЛОК
+          OR A: LD A,1
+          RET
+
+;ДОЛГОЕ ОЖИДАНИЕ БЛОКА И ПРИЕМ БЛОКА
+
+;out: CY НЕТ БЛОКА
+;[BC] ДЛИНА
+;[D] СКОРОСТЬ (#80 НЕОПРЕДЕЛЕНА)
+
+D_WAIT_BLC
+        CALL WAIT_LINE: RET C
+        CALL LOAD_DATA
+        CALL LINE_FREE
+        JR E_LOAD_DT
+
+SCAN_IN CALL IN_LINE
+        CP D : RET C
+        CP E : CCF
+        RET
+
+IN_LINE_D    ;ЗАДЕРЖКА И ОПРОС ВХОДА
+        PUSH BC : POP BC
+
+;ОПРОС ВХОДА
+
+IN_LINE PUSH HL : PUSH BC
+        LD A,(LCOUNT_A) : LD C,A
+        LD A,(LCOUNT_B) : LD B,A
+
+LOOP_TIN INC C : JP Z,END_TIN
+         IN A,(#FE) : AND #40
+         XOR B : JP Z,LOOP_TIN
+
+        XOR B : LD (LCOUNT_B),A
+RET_TIN LD A,C
+        LD HL,LCOUNT_A
+        SUB (HL) : LD (HL),A
+        LD A,C
+        POP BC : POP HL
+        RET
+
+END_TIN DEC C: JR RET_TIN
+
+
+;ОЖИДАНИЕ ОСВОБОЖДЕНИЯ ЛИНИИ, ВЕРТИМСЯ
+;ЗДЕСЬ ДО ТЕХ ПОР, ПОКА ИЗ ЛИНИИ НЕ
+;ИСЧЕЗНЕТ СИГНАЛ АБОНЕНТА
+
+LINE_FREE
+        PUSH AF : PUSH DE : PUSH BC
+        XOR A : LD (LCOUNT_A),A
+        LD A,#40 : LD (LCOUNT_B),A
+        CALL IN_LINE
+        LD DE,#0570    ;#0180
+        NOP : NOP
+LN_FREE1 NOP: NOP
+LN_FREE2 LD B,4
+         CALL DELAY_37
+         CALL SCAN_IN
+         NOP : JP  NC,LN_FREE1
+
+LN_FREE3 DEC B : JP Z,LINE_FREE4
+        CP #FF : JP NC,LINE_FREE4
+        CALL DELAY_37
+        CALL SCAN_IN
+        JP C,LN_FREE3
+        JP LN_FREE2
+
+;ЛИНИЯ СВОБОДНА
+
+LINE_FREE4
+        POP BC : POP DE : POP AF
+        RET
+
+
+;СИНХРОНИЗАЦИЯ БЛОКА
+
+SYNCD1_IN JP SYNC1_IN
+SYNC1_IN  NOP : NOP
+        CALL IN_LINE
+        CP D : JP C,ED_SYNCD
+        CP E : CCF: JP C,ED_SYNCD
+        LD B,A
+        LD A,(HL)
+        OR A : JP Z,SYNC1_I1
+        ADD A,B : LD (HL),A
+SYNC1_I2 ADD A,0
+         INC HL
+         RET
+SYNC1_I1 JP SYNC1_I2
+
+SYNCD2_IN JP SYNC2_IN
+SYNC2_IN  NOP : NOP
+SYNC2_I6 CALL IN_LINE
+        CP D: JP C,ED_SYNCD
+        CP E: CCF: JP C,ED_SYNCD
+        LD B,A
+        LD A,(HL)
+        SUB B
+        JP P,SYNC2_I2
+        XOR A : ADD A,0
+SYNC2_I1 LD (HL),A
+         INC HL
+         RET
+SYNC2_I2 JP SYNC2_I1
+
+ED_SYNCD INC SP : INC SP
+ERR_SYNC POP DE : POP HL
+         RET
+
+;ЗАДЕРЖКИ НА СООТВ. ЧИСЛО ТАКТОВ
+DELAY_57   JP DELAY_47
+DELAY_47   JP DELAY_37
+DELAY_37   CALL DELAY_27
+DELAY_27   RET
+DELAY_68   CALL DELAY_27
+           CALL DELAY_27
+           NOP
+           RET
+
+DELAY_C LD B,#FE
+         CALL DELAY_47
+         CALL DELAY_47
+        DJNZ DELAY_C+2
+        DEC C : JP NZ,DELAY_C
+        RET
+
+;ОЖИДАНИЕ СИГНАЛА АБОНЕНТА
+;В ТЕЧЕНИИ 200.4 СЕКУНД
+
+WAIT_LINE DI
+          LD HL,#4000 : LD (LCOUNT_A),HL
+          LD D,3
+WT_LINE1 LD E,3
+WT_LINE2 LD H,1
+WT_LINE3 LD B,16
+         LD A,H: LD (LCOUNT_C),A
+LP_WLINE CALL IN_LINE
+         CP MIN+1 : JP C,WAIT_CONTR1
+         CP #2D : JP C,WAIT_SPEED
+WAIT_CONTR
+         ADD A,L : JP NC,$+4 : INC H
+         ADD A,6 : LD L,A
+         JP NC,$+4 : INC H
+         LD A,(LCOUNT_C)
+         CP H
+         JP C,WT_LINE3
+         JP Z,WAIT_CONTR2
+         DEC E : JP NZ,WT_LINE2
+         DEC D : JP NZ,WT_LINE1
+         SCF: RET
+
+WAIT_CONTR1 CP 5
+            JP WAIT_CONTR
+
+WAIT_CONTR2 LD B,16
+            JP LP_WLINE
+
+;КОНТРОЛЬ СКОРОСТИ ПРИ ОЖИДАНИИ
+
+WAIT_SPEED
+        CALL DELAY_47: NOP
+        DEC B : JP NZ,LP_WLINE
+        CALL IN_LINE
+
+;КОНТРОЛЬ СКОРОСТИ. ПОДСЧЕТ ЧИСЛА ИМПУЛЬ-
+;СОВ => СКОРОСТЬ
+
+CONTR_SPEED
+        LD BC,#0006
+        CALL IN_LINE
+        CALL IN_LINE_D
+        CALL IN_LINE_D
+        PUSH BC: POP BC
+C_SPEED CALL IN_LINE
+        ADD A,B: LD B,A
+        DEC C: JR NZ,C_SPEED
+        OR A
+        RET
+
+;ПРИЕМ БЛОКА.
+;В [B] ЧИСЛО ИМПУЛЬСОВ (СКОРОСТЬ)
+
+LOAD_DATA
+MOD_BUFF1 EQU $+1: LD HL,0
+        LD A,195 : CP B
+        JP C,INP_600    ;?>195 = 600
+        LD A,130 : CP B
+        JP C,INP_1800   ;?>130 = 1800
+        LD A,60 : CP B
+        CCF : RET C     ;?>060 = 2400
+
+INP_FAST LD A,2
+         LD (SPEED),A ;СКОРОСТЬ 2400
+        CALL SYNC_FAST: RET C
+        CALL LOAD_BYTE_FAST : RET C
+
+;ПРИНИМАЕМ ДЛИНУ БЛОКА: ЕСЛИ 0-Й БАЙТ
+;РАВЕН #08, ТО ДЛИНА БЛОКА БОЛЬШЕ НА
+;256 БАЙТ
+        LD (ZERO_BYTE),A
+        LD D,0
+        CP 8: JR NZ,$+3: INC D
+;ПРИНИМАЕМ МЛ. БАЙТ ДЛИНЫ
+        CALL LOAD_BYTE_FAST: RET C
+        LD E,A: OR A: JR NZ,$+3: INC D
+
+        LD (BLOCK_LEN),DE
+
+;ПРИНИМАЕМ САМ БЛОК, ДЛИНОЙ [DE]
+
+LD_BLOCK_FAST
+        CALL LOAD_BYTE_FAST: RET C
+        LD (HL),A
+        INC HL: DEC DE
+        LD A,D: OR E
+        JP NZ,LD_BLOCK_FAST
+        RET
+
+;ПРИНИМАЕМ БАЙТ
+
+LOAD_BYTE_FAST
+        LD B,8   ;ЛОВИМ 8 БИТ
+        CALL IN_LINE
+
+;ОПРЕДЕЛИЛИ ЧАСТОТУ, ЕСЛИ ОНА ЛЕЖИТ
+;В ДИАПАЗОНЕ ОТ MIN ДО MAX, ТО БИТ
+;ПРИНЯТ, ИНАЧЕ - ОШИБКА
+        CP MIN : JP C,ERR_LDFAST
+        CP MAX : JP NC,ERR_LDFAST
+
+;ЕСЛИ ЧАСТОТА БОЛЬШЕ ZERO - ПРИНЯЛИ
+;ЕДИНИЦУ, МЕНЬШЕ - НУЛЬ
+        CP ZERO
+        RL C ;ПРИНЯЛИ ИНВЕРСНЫЙ БИТ
+        CALL DELAY_47   ;27
+        DEC B: JP Z,_LOAD_BYTE_FAST
+        CALL IN_LINE
+        JP LOAD_BYTE_FAST+2
+
+_LOAD_BYTE_FAST
+        LD A,C: CPL ;ИНВЕРТИРОВАЛИ БАЙТ
+        PUSH AF
+        CALL IN_LINE
+        POP AF
+        OR A: RET ;БАЙТ ПРИНЯТ
+
+ERR_LDFAST        ;ОШИБКА ПРИЕМА
+        POP BC
+        SCF: RET
+
+;СИНХРОНИЗАЦИЯ БЛОКА
+
+SYNC_FAST PUSH HL
+        LD DE,MIN*256+ZERO-3
+        LD A,1
+        LD (SYNC_TABL),A
+        LD (SYNC_TABL+1),A
+        CALL IN_LINE
+        CALL DELAY_68
+         CALL IN_LINE
+S1_FAST CALL DELAY_57
+        CALL IN_LINE
+        CP D : JP C,ERR_SYNC
+        CP E : JP C,S1_FAST
+
+        LD E,MAX-1
+        LD HL,SYNC_TABL
+        CALL DELAY_47
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+         CALL IN_LINE
+         CALL DELAY_68
+         CALL DELAY_27
+        CALL IN_LINE
+        CALL DELAY_47
+        CALL DELAY_27
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+         LD HL,SYNC_TABL
+         CALL SYNC2_IN
+         CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        CALL SYNCD1_IN
+         LD HL,SYNC_TABL
+         CALL SYNC2_IN
+         CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        LD C,A
+        CALL SYNCD1_IN
+        CP C : JP M,S2_FAST
+         CALL IN_LINE
+         CALL DELAY_68
+         CALL DELAY_27
+
+S2_FAST CALL IN_LINE
+        CALL DELAY_68
+        CALL IN_LINE
+        POP HL
+        OR A: RET
+
+
+;00! ДЛЯ СКОРОСТЕЙ 1800/600 ВСЕ ОЧЕНЬ
+;ПОХОЖЕ, ПОЭТОМУ БЕЗ КОМЕНТАРИЕВ
+
+INP_1800 LD A,1: LD (SPEED),A
+        CALL IN_LINE
+        CALL DELAY_27
+        NOP
+        LD DE,#0E19
+        LD DE,#0E19
+        CALL SYNC_1800: RET C
+        LD D,0
+        CALL LOAD_BYTE_1800: RET C
+        LD (ZERO_BYTE),A
+        CP 8: JR NZ,$+3: INC D
+;ПРИНИМАЕМ ДЛИНУ
+        CALL LOAD_BYTE_1800: RET C
+        LD E,A: OR A: JR NZ,$+3: INC D
+
+        LD (BLOCK_LEN),DE
+LD_BLOCK_1800
+        CALL LOAD_BYTE_1800: RET C
+        LD (HL),A
+        INC HL: DEC DE
+        LD A,D: OR E
+        JP NZ,LD_BLOCK_1800
+        RET
+
+LOAD_BYTE_1800
+         PUSH BC : LD B,8
+        CALL IN_LINE
+        CP #0F: JP C,ERR_LD1800
+        CP #2D: JP NC,ERR_LD1800
+        CP #1C: LD A,C: RLA: LD C,A
+        CALL DELAY_27
+        DEC B: JP NZ,NEXT_B1800
+        LD A,C: CPL
+        POP BC
+        PUSH AF
+        CALL IN_LINE
+        POP AF
+        OR A: RET
+
+NEXT_B1800
+        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        CALL DELAY_57
+        CALL DELAY_27
+        NOP
+        JP LOAD_BYTE_1800+3
+
+ERR_LD1800
+        POP BC
+        SCF: RET
+
+SYNC_1800 PUSH HL
+        PUSH DE
+        OR A : LD A,1
+        LD (SYNC_TABL),A
+        LD (SYNC_TABL+1),A
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        CALL DELAY_27
+        NOP
+S1_1800 CALL DELAY_68
+        CALL IN_LINE
+        NOP
+        CP D: JP C,ERR_SYNC
+        CP E: JP C,S1_1800
+        LD DE,#0E2E
+        LD HL,SYNC_TABL
+        CALL DELAY_47
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        CALL DELAY_47
+        CALL DELAY_27
+        ADD A,0
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        LD C,A
+        ADD A,0
+        CALL SYNCD1_IN
+        CP C: JP M,S2_1800
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+        NOP
+S2_1800 CALL IN_LINE
+        CALL DELAY_68
+
+
+
+
+
+
+
+
+
+И00        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        POP DE
+        POP HL
+        OR A: RET
+
+INP_600 XOR A: LD (SPEED),A
+        CALL IN_LINE
+        NOP
+        LD DE,#1728
+        LD DE,#1728
+        CALL SYNC_600: RET C
+        LD D,0
+        CALL LOAD_BYTE_600 : RET C
+        LD (ZERO_BYTE),A
+        CP 8: JR NZ,$+3 : INC D
+;ПРИНИМАЕМ ДЛИНУ
+        CALL LOAD_BYTE_600 : RET C
+        LD E,A: OR A: JR NZ,$+3: INC D
+
+        LD (BLOCK_LEN),DE
+LD_BLOCK_600
+        CALL LOAD_BYTE_600: RET C
+        LD (HL),A
+        INC HL: DEC DE
+        LD A,D: OR E
+        JP NZ,LD_BLOCK_600
+        RET
+
+
+LOAD_BYTE_600
+         PUSH DE: PUSH BC
+         LD B,8
+        CALL IN_LINE
+        CALL IN_LINE
+        CALL IN_LINE
+        CP #17: JP C,ERR_LD600
+        CP #59: JP NC,ERR_LD600
+        CP #2D: LD A,E: RLA: LD E,A
+        CALL IN_LINE
+        DEC B
+        JP NZ,LOAD_BYTE_600+4
+        LD A,E: CPL: OR A
+        POP BC
+        POP DE
+        RET
+
+ERR_LD600 POP BC: POP DE
+        SCF: RET
+
+SYNC_600 PUSH HL: PUSH DE
+        OR A
+        LD A,1
+        LD (SYNC_TABL),A
+        LD (SYNC_TABL+1),A
+        LD (SYNC_TABL+2),A
+        LD (SYNC_TABL+3),A
+        CALL IN_LINE
+        CALL DELAY_68
+        CALL DELAY_27
+        NOP
+        CALL IN_LINE
+        CALL DELAY_27
+        NOP
+S1_600  CALL DELAY_68
+        CALL IN_LINE
+        NOP
+        CP D: JP C,ERR_SYNC
+        CP E: JP C,S1_600
+        LD A,(SYNC_TABL+4)
+        INC A
+        LD (SYNC_TABL+4),A
+        ADD A,0
+        LD DE,#0E59
+        LD HL,SYNC_TABL
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        CALL SYNCD2_IN
+        LD HL,SYNC_TABL
+        CALL SYNC1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        CALL SYNCD1_IN
+        LD HL,SYNC_TABL
+        CALL SYNC2_IN
+        LD C,A
+        ADD A,0
+        CALL SYNC2_IN
+        CP C : JP M,EXT_SYNC
+        LD C,A
+        CALL SYNC2_I6
+        CP C : JP M,EXT_SYNC
+        LD C,A
+        CALL SYNC2_I6
+        CP C : JP M,EXT_SYNC
+        OR A : JP Z,ERR_SYNC
+        NOP
+        CALL IN_LINE
+EXT_SYNC POP DE: POP HL
+         OR A: RET
+
+
+;ПЕРЕДАЧА БЛОКА ИЗ MOD_BUFF,
+;BC - ДЛИНА, A - СКОРОСТЬ
+
+D_TRANSMIT DI
+        LD (SPEED),A
+        PUSH AF  ;СОХРАНИЛИ СКОРОСТЬ
+MOD_BUFF2 EQU $+1: LD HL,0
+        DEC HL
+        PUSH HL
+        ADD HL,BC
+        EX (SP),HL ;АДРЕС ПОСЛ. БАЙТА
+
+        LD (HL),C  ;МЛ. БАЙТ ДЛИНЫ
+        DEC HL: LD (HL),7
+        LD A,B: OR A
+        JR Z,$+3: INC (HL) ;ДЛИНА >256
+
+        DEC HL
+        LD (HL),#AA ;СИНХРО БАЙТ
+        XOR A
+        DEC HL: LD (HL),A
+        DEC HL: LD (HL),A
+        DEC HL
+
+        POP DE  ;АДРЕС ПОСЛЕДНЕГО БАЙТА
+        POP AF  ;СКОРОСТЬ ПЕРЕДАЧИ
+        OR  A: JP Z,TRANSMIT_600
+        DEC A: JP Z,TRANSMIT_1800
+
+TRANSMIT_FAST
+        XOR  A: LD (HL),A ;СИНХРО
+        DEC HL: LD (HL),A
+        DEC HL: LD (HL),A
+        DEC HL: LD (HL),A
+        DEC HL: LD (HL),A
+
+        CALL LINE_FREE
+        PUSH BC
+        LD C,1: CALL DELAY_C
+        POP BC
+        CALL OUTPUT_FAST
+        PUSH HL
+        PUSH DE
+        LD BC,#020C
+        LD A,0
+        NOP: NOP: NOP: NOP
+        JP OUT_BIT2600
+
+;ПЕРЕДАЕМ БЛОК
+
+OUTPUT_FAST
+        LD A,(HL)         ;ПЕРЕДАЕМ БАЙТ
+        CALL OU_BYTE_FAST
+        NOP
+        CALL COMP_HL_DE
+        RET Z          ;БЛОК ПЕРЕДАН
+        INC HL: JP OUTPUT_FAST
+
+;ПЕРЕДАЧА БАЙТА
+
+OU_BYTE_FAST
+        PUSH HL: PUSH DE
+        LD BC,#080C
+OUT_BIT2600
+        PUSH AF
+        RLA : JP C,BIT1_FAST
+          LD HL,D0_FAST : JP OB_FAST ;=0
+BIT1_FAST LD HL,D1_FAST : JP OB_FAST ;=1
+
+;ПРИ ПЕРЕДАЧИ 1-ГО БИТА MIC OFF МЕНЬШЕ НА
+;12 (168 ТАКТОВ),Т.К. 168 ТАКТОВ НУЖНЫ
+;ДЛЯ ПОЛУЧЕНИЯ СЛЕД. БАЙТА,КОНТРОЛЯ,00.
+
+OB_FAST RRA
+        LD A,(HL)
+        SUB C : LD D,A : INC HL
+        LD E,(HL) : INC HL
+        CALL OUT_DATA
+        POP AF
+        RLCA
+        DEC B
+        LD C,0 : LD C,0 : NOP
+        JP NZ,OUT_BIT2600
+        POP DE : POP HL
+        RET
+
+;ДЛЯ 1800/600 ПОХОЖЕ
+
+TRANSMIT_1800
+        XOR  A : LD (HL),A
+        DEC HL : LD (HL),A
+
+        CALL LINE_FREE
+        PUSH BC
+        LD C,1 : CALL DELAY_C
+        POP BC
+        CALL OUTPUT_1800
+        PUSH HL : PUSH DE
+        LD BC,#020C
+        LD A,0
+        NOP : NOP : NOP : NOP
+        JP OUT_BIT1800
+
+OUTPUT_1800
+        LD A,(HL)
+        CALL OU_BYTE_1800
+        NOP
+        CALL COMP_HL_DE
+        RET Z
+        INC HL: JP OUTPUT_1800
+
+OU_BYTE_1800
+        PUSH HL: PUSH DE
+        LD BC,#080C
+OUT_BIT1800
+        PUSH AF
+        RLA: JP C,BIT1_1800
+          LD HL,D0_1800: JP OB_1800 ;=0
+BIT1_1800 LD HL,D1_1800: JP OB_1800 ;=1
+
+OB_1800 RRA
+        LD A,(HL)
+        SUB C: LD D,A: INC HL
+        LD E,(HL): INC HL
+        CALL OUT_DATA
+        POP AF
+        RLCA
+        DEC B
+        LD C,0: LD C,0: NOP
+        JP NZ,OUT_BIT1800
+        POP DE: POP HL
+        RET
+
+TRANSMIT_600
+        CALL LINE_FREE
+        PUSH BC
+        LD C,1: CALL DELAY_C
+        POP BC
+        CALL OUTPUT_600
+        PUSH HL: PUSH DE
+        LD BC,#020D
+        LD A,0
+        NOP: NOP: NOP: NOP
+        JP OUT_BIT600
+
+OUTPUT_600
+        LD A,(HL)
+        CALL OU_BYTE_600
+        RLA: LD B,A
+        CALL COMP_HL_DE
+        LD A,B: RRA
+        RET Z
+        INC HL: JP OUTPUT_600
+
+OU_BYTE_600
+        PUSH HL: PUSH DE
+        LD BC,#080D
+        NOP
+
+OUT_BIT600
+        PUSH AF
+        RLA: JP C,B71_600 ;B7=1
+        RRA: JP C,B70_B01 ;B7=0,B0 =1
+        LD HL,D00_600 ;B7 =0 B0 =0
+        JP OB_600
+
+B71_600 RRA: JP NC,B71_B01
+        LD HL,D10_600   ;B7=1 B0=0
+        JP OB_600
+
+B71_B01 LD HL,D11_600   ;B7=1 B0=1
+        JP OB_600
+
+B70_B01 LD HL,D01_600   ;B7=0 B0=1
+        JP OB_600
+
+OB_600  NOP
+        LD A,(HL)
+        SUB C: LD D,A: INC HL
+        LD  E,(HL): INC HL
+        CALL OUT_DATA
+        CALL OUT_DATA
+        POP AF
+        RLCA
+        DEC B
+        LD C,0: NOP : NOP
+        JP NZ,OUT_BIT600
+        POP DE:  POP HL
+        RET
+
+;СРАВНИТЬ HL И DE
+COMP_HL_DE
+        NOP
+        LD A,H : CP D
+        JP NZ,$+6: LD A,L: CP E: RET
+        NOP: NOP: RET
+
+;ПЕРЕДАЧА БИТА
+OUT_DATA
+        DEC D: JP NZ,$-1 ;ЗАДЕРЖКА D
+
+BORDER_0 LD A,#00   ;MIC OFF
+        JP $+3
+        OUT (#FE),A
+        DEC E: JP NZ,$-1 ;ЗАДЕРЖКА E
+
+BORDER_1 LD A,#08   ;MIC ON
+         JP $+3
+         OUT (#FE),A
+        LD D,(HL): INC HL
+        LD E,(HL): INC HL
+        NOP
+        RET
+
+;ТАБЛИЦЫ ДЛЯ ПЕРЕДАТЧИКА
+
+;1800
+D0_1800 DB 36,36+13 ;ЧАСТОТЫ ДЛЯ "0"
+D1_1800 DB 67,67+13 ;ЧАСТОТЫ ДЛЯ "1"
+
+D00_600 DB #36,#44,#40,#44 ;B7 =0 B0 =0
+D01_600 DB #57,#58,#49,#44 ;B7 =0 B0 =1
+D10_600 DB #57,#65,#61,#65 ;B7 =1 B0 =0
+D11_600 DB #36,#4D,#54,#65 ;B7 =1 B0 =1
+
+
+D0_FAST DB 28,28+13  ;КОДА ПЕРЕДАЧИ "0"
+D1_FAST DB 51,51+13  ;SPEED FAST    "1"
+
+MIN     EQU 11
+MAX     EQU 37
+ZERO    EQU 23
+
+;ЧИСЛО ТАКТОВ В ПЕРЕДАЧИ БИТА
+;T=(2*D+13)*14+56  D - ЧИСЛО ИЗ ТАБЛИЦЫ
+;D0_?? ДЛЯ ПЕРЕДАЧИ "0" И D1_?? ДЛЯ "1"
+
+;СРЕДНЯЯ СКОРОСТЬ :
+;SPEED=(SPD0+SPD1)/2
+;SPD0=3500000/T0  SPD1=3500000/T1
+
+;ПРИЕМНИК :
+;ЕСЛИ С ЛИНИИ ПРИНЯТО ЧИСЛО < MIN -ОШИБКА
+;ЕСЛИ > MAX : ОШИБКА
+;ЕСЛИ MIN < ?? < ZERO : ПРИНЯЛИ "0"
+;ЕСЛИ ZERO < ?? < MAX : ПРИНЯЛИ "1"
+
+;ZERO=T0/46
+;MAX=T1/46
+;MIN=ZERO-11..13
+
+;В ДАННОМ ДРАЙВЕРЕ П/П РАБОТЫ С ЧАСАМИ
+;ОТСУТСТВУЮТ, И СТОЯТ "ЗАГЛУШКИ"
+
+;УСТАНОВИТЬ ВРЕМЯ [A]-[B]-[C]
+
+D_SET_TIME
+
+;СЧИТАТЬ ВРЕМЯ [A]-[B]-[C]
+
+D_RD_TIME
+
+;ЕСЛИ ЧАСЫ ПОЛУАВТОНОМНЫ, ТО ЭТА П/П
+;ПРОИЗВОДИТ ПОДСЧЕТ ВРЕМЕНИ
+
+D_CAL_TIM
+
+;УСТАНОВИТЬ ТАЙМЕР НА [BC] МИНУТ
+
+D_SET_ALR
+
+;ДОБАВИТЬ К ТАЙМЕРУ [BC] МИНУТ
+
+D_ADD_ALR
+         SCF: RET
+
+;ЕСЛИ ВРЕМЯ ИСТЕКЛО, CY=1
+
+D_RD_ALR XOR A: RET
+
+END
+
+_______________________________

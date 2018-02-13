@@ -1,0 +1,316 @@
+Текст предоставлен автором
+
+
+
+Dr.Bars/Flash Inc.
+
+Независимый драйвер для чтения и записи файлов в системе TR-DOS
+
+
+ Иногда при адаптации западных игр к TR-DOS приходилось исполь-
+зовать нестандартные способы обращения к диску.  Часто это было
+связано  с тем,  что  программисты  использовали  всю доступную
+память, в т.ч.  и область системных переменных basic'а,  вместо
+которых мог лежать, например код или графика игры.
+ В общем,  немного подумав над проблемой очередной адаптации, я
+решил написать универсальный драйвер  для  независимой работы с
+чтением и записью файлов.  Проблема  была  обрисована тем,  что
+требовалось  загружать  и записывать файл по стандарту  TR-DOS,
+т.е.  с поиском имени в каталоге,  и соответственно  записью  в
+каталог.
+ Для работы процедура использует два буфера. Один длинною в 256
+байт используется под нужды парсера, второй содержит переменные
+о параметрах нашего файла.  Для работы  с драйвером нужно рабо-
+тать со вторым буфером напрямую,  итак переменная NAME длинна 9
+байт.  Первые 8 байт - имя файла,  последний байт - тип  файла.
+Переменная SYSTEM содержит по смещению +0 адрес загрузки нашего
+файла или адрес  откуда  будет производиться запись (тип word).
+По смещению SYSTEM+2  содержится длинна  нашего файла в байтах,
+эта  переменная  актуальна для  режима  записи на диск.  Причем
+отмечу,  запись производится с реально указанной длинной файла.
+Остальное   пространство,  которое   захватывает сектор,  будет
+обнулено автоматически.  Далее по  смещению SYSTEM+4 содержится
+информация о секторе (тип byte) и по SYSTEM+5 о положении файла
+на диске (тип word).  Эти переменные используются драйвером для
+внутренних нужд.
+ Сам  драйвер работы  с диском при наличии ошибки чтения/записи
+зацикливается пока данные не будут считаны  или записаны.  Если
+ошибка фатальная выйти можно вставив другую дискету,  завершить
+процесс.  На  этот случай  рекомендую  делать проверку  crc  на
+целостность загружаемого файла.
+
+Итак, практическое применение:
+
+LOAD:   SUB A       ; обнуляем регистр A (A=0 - режим загрузки)
+        LD HL,адрес_загрузки
+        LD (SYSTEM),HL
+        CALL LOADER
+        OR A
+        JR NZ,файл_не_найден
+        RET
+
+SAVE:   LD A.#FF                      ; (A<>0 - режим выгрузки)
+        LD HL,адрес_выгрузки
+        LD (SYSTEM),HL
+        LD HL,длинна_файла
+        LD (SYSTEM+2),HL
+        CALL LOADER
+        OR A
+        JR NZ,нет_места_на_диске
+        RET
+
+LOADER  DI
+        OR A
+        JR NZ,SAVER
+        SUB A
+LOOP    PUSH AF
+        LD HL,BUF
+        PUSH HL
+        LD E,A
+        SUB A
+        LD D,A
+        INC A
+        LD B,A
+        DEC A
+        CALL DRIVER
+        LD B,16
+        POP HL
+CHECK   PUSH BC
+        LD B,9
+        LD DE,NAME
+CHECK1  LD A,(DE)
+        CP (HL)
+        JR NZ,CHECK2
+        INC HL
+        INC DE
+        DJNZ CHECK1
+        POP BC
+        POP AF
+        INC HL
+        INC HL
+        LD E,(HL)
+        INC HL
+        LD D,(HL)
+        PUSH DE
+        INC HL
+        LD B,(HL)
+        DEC B
+        INC HL
+        LD E,(HL)
+        INC HL
+        LD D,(HL)
+        LD A,B
+        OR A
+        JR NZ,CHECK3
+        LD HL,BUF
+        PUSH HL
+        INC B
+        SUB A
+        CALL DRIVER
+        POP HL
+        LD DE,(SYSTEM)
+        POP BC
+        JR CHECK4
+CHECK3  PUSH BC
+        LD HL,(SYSTEM)
+        SUB A
+        CALL DRIVER
+        PUSH HL
+        INC B
+        LD HL,BUF
+        SUB A
+        CALL DRIVER
+        POP DE
+        POP BC
+        LD C,0
+        POP HL
+        OR A
+        SBC HL,BC
+        LD B,H
+        LD C,L
+        LD HL,BUF
+CHECK4  LDIR
+        SUB A
+        RET
+CHECK2  LD A,B
+        ADD A,7
+        LD C,A
+        LD B,0
+        ADD HL,BC
+        POP BC
+        DJNZ CHECK
+        POP AF
+        INC A
+        CP 8
+        JR NZ,LOOP
+        RET
+
+SAVER   LD HL,BUF
+        LD E,8
+        SUB A
+        LD B,A
+        LD D,B
+        INC B
+        CALL DRIVER
+        LD A,(BUF+228)
+        LD C,A
+        CP 128
+        RET NC
+        LD DE,(SYSTEM+2)
+        DEC DE
+        INC D
+        LD B,D
+        LD A,B
+        LD E,B
+        LD D,0
+        LD HL,(BUF+229)
+        LD (SYSTEM+4),A
+        OR A
+        SBC HL,DE
+        LD A,H
+        CP #FF
+        RET Z
+        LD A,C
+        PUSH AF
+        LD (BUF+229),HL
+        LD A,(BUF+228)
+        INC A
+        LD (BUF+228),A
+        LD DE,(SYSTEM)
+        LD HL,(BUF+225)
+        LD (SYSTEM+5),HL
+        EX DE,HL
+        CALL DRIVER
+        LD (BUF+225),DE
+        SUB A
+        INC A
+        LD B,A
+        LD HL,BUF
+        LD DE,8
+        CALL DRIVER
+        LD E,0
+        LD HL,BUF
+        LD BC,2048
+SLD3    POP AF
+        OR A
+        JR Z,SOHRAN
+        DEC A
+        PUSH AF
+        PUSH BC
+        LD B,16
+SLD1    INC L
+        DJNZ SLD1
+        LD A,L
+        OR A
+        JR NZ,SLD4
+        INC E
+SLD4    POP BC
+        DEC BC
+        LD A,B
+        OR C
+        JR NZ,SLD3
+SOHRAN  LD D,0
+        PUSH DE
+        PUSH HL
+        LD HL,BUF
+        SUB A
+        LD B,A
+        INC B
+        CALL DRIVER
+        POP DE
+        LD HL,NAME
+        LD BC,16
+        LDIR
+        POP DE
+        LD HL,BUF
+        SUB A
+        INC A
+        LD B,A
+        CALL DRIVER
+        EI
+        RET
+
+DRIVER  PUSH BC
+        PUSH HL
+        INC E
+        OR A
+        LD A,#A0
+        LD HL,#3FCA
+        JR NZ,TR_DOS1
+        LD A,#80
+        LD HL,#3FE5
+TR_DOS1 LD (TR_DOS0+2),HL
+        LD (TR_DOS3+1),A
+TR_DOS5 CALL TRECK
+        LD IX,#2F59
+        CALL TR_DOS
+        LD B,4
+WAIT    CALL #3DFD
+        DJNZ WAIT
+TR_DOS4 BIT 6,B
+        JR NZ,TR_DOS5
+        POP HL
+        POP BC
+NEXT    PUSH BC
+        PUSH HL
+        LD C,#5F
+        LD A,E
+        CALL PORT
+        LD C,#7F
+TR_DOS3 LD A,0
+        CALL TRRDOS
+TR_DOS0 LD IX,0
+        CALL TR_DOS
+        PUSH DE
+        SUB A
+        LD C,#3F
+        CALL PORT
+        LD A,#A
+        LD C,#5F
+        CALL PORT
+        LD D,1
+        LD IX,#3F33
+        CALL TR_DOS
+        POP DE
+        LD A,D
+        SRL A
+        LD C,#3F
+        CALL PORT
+        SUB A
+        OR B
+        JR NZ,TR_DOS4
+        POP HL
+        INC H
+        POP BC
+        INC E
+        LD  A,E
+        CP #11
+        CALL Z,TRECK-3
+        DJNZ NEXT
+        DEC E
+        RET
+        LD E,1
+        INC D
+TRECK   LD A,D
+        SRL A
+        LD C,#7F
+        CALL PORT
+DRIVE1  LD A,#2C
+        JR C,TRECK0
+DRIVE2  LD A,#3C
+TRECK0  LD C,#FF
+        CALL PORT
+        LD A,#1C
+TRRDOS  LD IX,#2FC3
+TR_DOS  PUSH IX
+        JP #3D2F
+PORT    LD IX,#2A53
+        JR TR_DOS
+
+NAME    DEFB "********C"
+SYSTEM  DEFW #C000      ; START
+        DEFW            ; LENGHT
+        DEFB 0          ; SECTORS
+        DEFW 0          ; TRK/SEC
+        ORG #5B00
+BUF     DEFS 256        ; BUFFER

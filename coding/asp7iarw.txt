@@ -1,0 +1,485 @@
+Из газеты ASpect #7, Санкт-Петербург, 08.03.98
+
+
+
+       СТРЕЛОЧКА БЕЗ СТРЕЛОЧНИКА...
+
+ Наверное многие, запуская X-REVERSY, или
+FONT EDITOR, или  тот  же  ASPECT  видели
+данное  средство  управления   програмным
+продуктом. И ,наверняка, попытки  скодить
+стрелочку не  привели  к  желаемому:  при
+перемещении стрелочка моргала,дергалась,а
+при  попытке  сделать  ее  же, но   через
+прерывания,  изображение , скорее  всего,
+пропадало вовсе.
+ У меня тоже были похожие проблемы, но их
+удалось   преодолеть.   Во-первых,   надо
+избавиться от кучи  команд  RRCA/RLCA , а
+делается очень просто:  вместо того чтобы
+двигать  изображение  стрелки  во   время
+вывода,надо  сдвинуть  его  до  вывода, и
+положть в память (всего  8  изображений),
+и  не  надо  вычислять  адрес  вывода  на
+экране при помощи процедуры 8880  или  ей
+подобных - заполните таблицу...
+А вот и код программы :
+
+        ORG 30000
+        CALL    ZAPTAB      ;заполняем таблицу адресов
+        CALL    ZAPSTR      ;  делаем   8   изображений
+                            ; стрелки   и   маски   для
+                            ;стрелки
+        CALL    OUTMAR      ;выводим стрелочку
+        LD  HL, INTERR      ; ставим  свой  обработчик
+                            ;прерываний
+        CALL    IMON
+MMMM    EI                  ;ждем
+        HALT
+        LD  A,(HOLDING+1)   ;пока не будет нажата
+        AND A               ;кнопка FIRE на KEMPSTONе или
+        JR  NZ,MMMM         ;SINCLAIRe или SPACE на
+        RET                 ;клаве,опосля чего уходим...
+
+;Процедура обработки прерываний
+
+INTERR  DI                  ;на всякий пожарный
+        PUSH    HL          ;энто надо сохранить ...
+        PUSH    DE
+        PUSH    BC
+        PUSH    AF
+        EXX
+        PUSH    HL
+        PUSH    BC
+        PUSH    DE
+        EX  AF,AF'
+        PUSH    AF
+        PUSH    IX
+        PUSH    IY          ;... на память
+HOLDING LD  A,2             ;а надо ли что-нить
+        AND A               ;выводить на экран ?
+        JR  Z,UPR           ;нет !!!
+        CALL    ZATIR       ;затираем изображение стрелки
+        DEC A               ;затереть и больше не ходить ?
+        JP  Z,FIRE1         ;да !!!
+        XOR A               ;сбросим флажок нажатия клавиши
+        LD  (FLG),A
+        CALL    KBDJOY      ;проверим управление
+        RRCA                ;если надо двигаем стрелку
+        PUSH    AF
+        CALL    C,RIGHT
+        POP AF
+        RRCA
+        PUSH    AF
+        CALL    C,LEFT
+        POP AF
+        RRCA
+        PUSH    AF
+        CALL    C,DOWN
+        POP AF
+        RRCA
+        PUSH    AF
+        CALL    C,UP
+        POP AF
+        RRCA
+        JR  C,FIRE          ;огонек - пойдем прикурим..
+        LD  A,(FLG)         ;кнопка не нажималась ?
+        AND A
+        JR  NZ,UPR1         ;печально,но факт
+        INC A               ;тогда шаг равен единице
+        LD  (RAZ),A
+UPR1    CALL    OUTMAR      ;выводим стрелочку
+UPR     POP IY              ;все восстановим
+        POP IX
+        POP AF
+        EX  AF,AF'
+        POP DE
+        POP BC
+        POP HL
+        EXX
+        POP AF
+        POP BC
+        POP DE
+        POP HL
+        EI
+        RET                 ;и пойдем себе ...
+
+;огонек нажат,однако
+
+FIRE    LD  A,1             ;затрем изображение и
+FIRE1   LD  (HOLDING+1),A   ;перейдем на
+        JP  UPR             ;холостой ход
+
+;двигемся вправо
+
+RIGHT   LD  A,(POSX)        ;координата по X
+        LD  C,A
+        LD  A,(RAZ)         ;шаг стрелочки
+        ADD A,C
+        RET C               ;за экраном (255+n=n-1 CY=1)
+        LD  (POSX),A
+MET     LD  A,1             ;нажата кнопка !
+        LD  (FLG),A
+        LD  A,(RAZ)         ;быстрее ехать нельзя ?
+        CP  13
+        RET NC              ;нельзя !
+        INC A               ;разгоняемся
+        LD  (RAZ),A
+        RET
+
+;двигаемся влево
+
+LEFT    LD A,(POSX)
+        LD  BC,(RAZ)
+        CP  C               ;координата меньше шага ?
+        RET C               ;значит левее нельзя
+        SUB C               ;двигаемся влево
+        LD  (POSX),A
+        JP  MET
+
+;двигаемся вверх
+
+UP      LD  A,(POSY)
+        LD  BC,(RAZ)
+        CP  C               ;Выше Y=0 только ПЗУ
+        RET C
+        SUB C
+        LD  (POSY),A
+        JP  MET
+
+;двигаемся вниз
+
+DOWN    LD  A,(POSY)
+        LD  BC,(RAZ)
+        ADD A,C
+        CP  191             ;Ниже Y=191 нам не надо
+        RET NC
+        LD  (POSY),A
+        JP  MET
+
+;процедура установки прерываний
+;на вход - HL адрес процедуры
+;обработки прерываний
+;портит : HL,BC,DE,AF
+
+IMON
+        DI
+        LD  A,24
+        LD  (65535),A
+        LD  A,195
+        LD  (65524),A
+        LD  (65525),HL
+        LD  HL,#FE00
+        LD  DE,#FE01
+        LD  BC,256
+        LD  A,H
+        LD  (HL),#FF
+        LDIR
+        DI
+        LD  I,A
+        IM  2
+        EI
+        RET
+
+;вывод стрелочки
+;с адреса TABLE должна быть таблица
+;адресов вывода
+;с адреса BUFFER должно быть пустое
+;пространство длиной не менее 32 байт
+; с адреса STR0 должны  находится  данные
+;для стрелочки  т.е. 8 спрайтов стрелочки
+; и маски причем в таком виде :
+;байт маски,байт стрелочки
+;длина стрелочки 2 байта (длина маски
+;тоже 2 байта) высота 16 пикселей,
+;т.е. с STR0 должно быть 512 байт.
+
+OUTMAR  LD  BC,(POSX)       ;берем позицию вывода
+        LD  (ZTPOSX),BC     ;кладем ее в процедуру
+                            ;затирания
+        LD  E,B
+        LD  D,0
+        LD  IX,TABLE        ;находим начальный адрес
+        ADD IX,DE           ;вывода в таблице
+        ADD IX,DE
+        LD  (ZATIR+2),IX    ;кладем его в процедуру
+        LD  IY,BUFFER       ;затирания,в IY - буфер
+                            ;в который будет сохранена часть
+                            ;экрана попавшая под стрелку
+        LD  A,C             ;вычисляем спрайт для вывода
+        AND 7
+        LD  B,A
+OUTMX   LD  HL,STR0
+        AND A
+        JR  Z,OUTM2
+        LD  DE,64
+OUTM1   ADD HL,DE
+        DJNZ    OUTM1
+OUTM2   LD  B,#10
+        SRL C               ;в C - колонка
+        SRL C
+        SRL C
+        LD  A,C
+        INC A
+        AND #1F             ;у конца экрана
+        JR  Z,OUTM7         ;да !!!
+OUTM4   EX  DE,HL
+        LD  A,(IX)
+        CP  #FF             ;что ниже экрана - не выводим
+        RET Z               ; ...
+        ADD A,C             ;адрес вывода на экран
+        LD  L,A
+        LD  H,(IX+1)
+        INC IX
+        INC IX
+        PUSH    BC
+        EX  DE,HL
+        LD  B,(HL)          ;берем маску
+        INC HL
+        LD  C,(HL)          ;берем данные
+        INC HL
+        LD  A,(DE)
+        LD  (IY),A
+        INC IY
+        AND B               ;накладываем
+        OR  C
+        LD  (DE),A          ;выводим
+        INC DE
+        LD  A,(DE)
+        LD  (IY),A
+        LD  B,(HL)
+        INC HL
+        LD  C,(HL)
+        AND B
+        OR  C
+        LD  (DE),A
+        INC IY
+OUTM6   INC HL
+        POP BC
+        DJNZ    OUTM4
+        RET
+OUTM7   EX  DE,HL           ;то же самое,только
+        LD  A,(IX)          ;выводится один байт вместо
+        CP  #FF             ;двух
+        RET Z
+        ADD A,C
+        LD  L,A
+        LD  H,(IX+1)
+        INC IX
+        INC IX
+        PUSH    BC
+        EX  DE,HL
+        LD  B,(HL)
+        INC HL
+        LD  C,(HL)
+        INC HL
+        INC HL
+        INC HL
+        LD  A,(DE)
+        LD  (IY),A
+        INC IY
+        AND B
+        OR  C
+        LD  (DE),A
+        POP BC
+        DJNZ    OUTM7
+        RET
+
+;процедура,восстанавливающая изображение
+;за стрелкой
+
+ZATIR   LD  IX,#4000        ;здесь будет другое
+        LD  HL,BUFFER
+        LD  B,#10
+        LD  A,(ZTPOSX)
+        SRL A
+        SRL A
+        SRL A
+        LD  C,A
+        LD  A,C
+        INC A
+        AND #1F
+        JR  Z,ZATIR3
+ZATIR1  LD  A,(IX)
+        CP  #FF
+        RET Z
+        ADD A,C
+        LD  E,A
+        LD  D,(IX+1)
+        LDI
+        LDI
+        INC BC
+        INC BC
+        INC IX
+        INC IX
+        DJNZ    ZATIR1
+        RET
+ZATIR3  LD  A,(IX)
+        CP  #FF
+        RET Z
+        ADD A,C
+        LD  E,A
+        LD  D,(IX+1)
+        LDI
+        INC BC
+        INC IX
+        INC IX
+        DJNZ    ZATIR3
+        RET
+
+;реакця на кнопочки и джойстик
+
+KBDJOY  IN  A,(31)          ;кемпстон с нами ?
+        LD  E,A
+        AND 3
+        CP  3
+        JR  NZ, KBDJ1       ;да !
+        LD  E,0             ;нет ,погулять вышел
+KBDJ1   LD  HL,DKEY         ;данные о клавишах
+                            ;управления
+KBDJ2   LD  C,(HL)          ;берем адрес порта
+        INC C
+        DEC C
+        LD  A,E
+        RET Z               ;если 0 то это конец ...
+        INC HL
+        LD  B,(HL)
+        INC HL
+        IN  A,(C)           ;читаем данные из портика
+        CPL
+        AND (HL)            ;выделяем нужный бит
+        INC HL
+        JR  Z,KBDJ3         ;такого мы не нажимали
+        LD  A,(HL)          ;нажимали,берем даные
+        OR  E
+        LD  E,A
+KBDJ3   INC HL
+        JR  KBDJ2
+
+;процедура,изготовляющая 8 спрайтов для
+;стрелочки,по STR0 должен находиться
+;спрайт в вышеописанном формате
+
+ZAPSTR  LD  IX,STR0
+ZAPSTRX PUSH    IX
+        LD  HL,STR0
+        LD  DE,64
+        LD  C,8
+        ADD HL,DE
+        PUSH    HL
+        POP IY
+ZAPST2  POP IX
+        PUSH    IY
+        LD  B,#10
+ZAPST1  CALL    ZAPBYT
+        INC IX
+        INC IY
+        LD  A,(IX)
+        AND A
+        CALL    ZAPBY1
+        INC IX
+        INC IX
+        INC IX
+        INC IY
+        INC IY
+        INC IY
+        DJNZ    ZAPST1
+        DEC C
+        JR  NZ,ZAPST2
+        POP IX
+        RET
+ZAPBYT  LD  A,(IX)
+        SCF
+ZAPBY1  RRA
+        LD  (IY),A
+        LD  A,(IX+2)
+        RRA
+        LD  (IY+2),A
+        RET
+
+;заполняет таблицу адресов с адреса
+;TABLE
+
+ZAPTAB  LD  IX,TABLE
+        LD  HL,#4000
+        CALL    ZAPADR
+        LD  HL,#4800
+        CALL    ZAPADR
+        LD  HL,#5000
+        CALL    ZAPADR
+        LD  (IX),#FF
+        LD  (IX+1),#FF
+        LD  (IX+2),#FF
+        RET
+ZAPADR  LD  DE,#20
+        LD  C,8
+ZAPAD2  PUSH    HL
+        LD  B,8
+ZAPAD1  LD  (IX),L
+        LD  (IX+1),H
+        INC IX
+        INC IX
+        INC H
+        DJNZ    ZAPAD1
+        POP HL
+        ADD HL,DE
+        DEC C
+        JR  NZ,ZAPAD2
+        RET
+
+;данные для опроса клавиатуры :
+;порт мл.байт,порт ст.байт,маска,вес
+
+DKEY    DEFB    #FE,#FB,1,8,#FE,#FD,1,4,#FE,#DF
+        DEFB    2,2
+        DEFB    #FE,#DF,1,1,#FE,#7F,1,16
+ 
+        DEFB    #FE,#EF,16,2,#FE,#EF,8,1,#FE,#EF,4,4
+        DEFB    #FE,#EF,2,8,#FE,#EF,1,16
+ 
+        DEFB    0
+
+;буфер для куска экрана
+
+BUFFER  DEFS    32
+
+;данные для стрелки
+
+STR0    DEFB    159,0,255,0,135,32,255,0,131,48
+        DEFB    255,0
+        DEFB    129,56,255,0,128,60,255,0,128,62,255
+        DEFB    0
+        DEFB    128,63,255,0,128,56,255,0,193,36,255
+        DEFB    0
+        DEFB    240,4,255,0,248,2,255,0,252,2,255,0
+        DEFB    252,0,255,0,255,0,255,0,255,0,255,0
+        DEFB    255,0,255,0
+        DEFS    480
+
+;переменные стрелки
+
+ZTPOSX  DEFB    0
+ZTPOSY  DEFB    0
+FLG     DEFB    0
+RAZ     DEFB    1
+POSX    DEFB    32
+POSY    DEFB    32
+
+;таблица адресов
+
+TABLE
+
+Теперь о  том, почему  у  меня  процедура
+вывода стрелки фактически состоит из двух
+процедур:  дело   в   том,  что   быстрее
+проверить один раз в начале, а не 16  раз
+во  время  вывода.  Кстати,  то,  что   в
+вышеприведенном  примере  стрелочка  была
+реализована  через  прерывания, вовсе  не
+значит,что это так и должно быть:  делать
+стрелочку через  прерывания  имеет  смысл
+тогда,  когда    на    экран    выводится
+динамическое изображение  (вроде  надписи
+ASPECT).Ну вот,пока и все ,до встречи !
+
+                          (C) Trusov Ilya

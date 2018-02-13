@@ -1,0 +1,178 @@
+<pre>
+Из журнала Deja Vu #06, Кемерово, 01.10.98
+
+
+
+(C) Max/Cyberax Software/BD
+__________________________________________
+
+            Генерилка шариков
+            -----------------
+
+   Вот такие симпатичные шарики  (всего 16
+фаз по #200 байт) генерирует нижеприведен-
+ная процедура. Написана  она может быть не
+совсем оптимально,  но работает неплохо.
+</pre>
+<img src=dv06ball/pic1.gif>
+<pre>
+   Вот и листинг:
+
+        ORG   #6000
+        ENT
+;Written by Max/CBX/BD (1997).
+
+PHASES  EQU   #8000; Фазы лежат здесь.
+SIN     EQU   #6C00
+        LD    HL,PHASES
+        LD    DE,PHASES+1
+        LD    BC,8*8*8*16-1
+        LD    (HL),L
+        LDIR
+        LD    HL,S_DATA
+        LD    DE,SIN
+        LD    C,65
+        LDIR
+        LD    H,D
+        LD    L,E
+        DEC   L
+        DEC   L
+MK_SIN  LD    A,(HL)
+        LD    (DE),A
+        INC   E
+        DEC   L
+        JR    NZ,MK_SIN
+        LD    C,#80
+        LDIR
+        CALL  CH_GEN
+        LD    A,16
+        LD    HL,PHASES+8
+GEN_LP  PUSH  HL,AF
+        SLA   A
+        CALL  BALL
+        POP   AF,HL
+        LD    DE,8*8*8
+        ADD   HL,DE
+        DEC   A
+        JR    NZ,GEN_LP
+        LD    HL,10072
+        EXX
+        RET
+
+BALL    LD    (CHESS+1),A
+        EXX
+        LD    B,#80
+        LD    HL,SIN
+        LD    DE,SIN+64
+BALL1   LD    A,(DE)
+        DEC   E
+        SLA   A
+        EXX
+        LD    E,A
+        LD    D,64
+        LD    A,D
+        PUSH  HL,DE
+        SUB   E
+        SRL   A
+        LD    E,A
+        SRL   E
+        SRL   E
+        SRL   E
+        LD    D,0
+        ADD   HL,DE
+        POP   DE
+        AND   7
+        INC   A
+        LD    B,A
+        LD    A,1
+ROLL    RRCA
+        DJNZ  ROLL
+        LD    B,A
+CHESS   LD    C,0
+        LD    A,(HL)
+        OR    B
+        LD    (HL),A
+        CALL  CHAIN
+        LD    A,(HL)
+        OR    B
+        LD    (HL),A
+        POP   HL
+        EXX
+        LD    A,(HL)
+        INC   L
+        SUB   (HL)
+        EXX
+        JR    Z,C1
+        LD    A,L
+        ADD   A,8
+        LD    L,A
+        JR    NC,C1
+        INC   H
+C1      EXX
+        LD    A,B
+        AND   16
+OLD     CP    0
+        JR    Z,ENDL
+        LD    (OLD+1),A
+        LD    A,(CHESS+1)
+        XOR   16
+;Здесь можно воткнуть команду ADD A,5.
+        LD    (CHESS+1),A
+ENDL    DJNZ  BALL1
+        RET
+
+CH_GEN  LD    DE,CHAIN
+        LD    B,#80
+        EXX
+        LD    HL,SIN
+        EXX
+CH_LP   PUSH  BC
+        LD    HL,CH_EXMP
+        LD    BC,NODOT-CH_EXMP
+        LDIR
+        LD    C,CHAIN-NODOT
+        EXX
+        LD    A,(HL)
+        INC   L
+        SUB   (HL)
+        EXX
+        JR    Z,JR_OK
+        DEC   C
+        DEC   C
+        INC   HL
+        INC   HL
+JR_OK   LDIR
+        POP   BC
+        DJNZ  CH_LP
+        LD    A,201
+        LD    (DE),A
+        RET
+
+S_DATA  DB    #1F,#1F,#1F,#1F,#1F,#1F,#1F
+        DB    #1F,#1E,#1E,#1E,#1E,#1E,#1D
+        DB    #1D,#1D,#1D,#1C,#1C,#1C,#1B
+        DB    #1B,#1B,#1A,#1A,#19,#19,#18
+        DB    #18,#17,#17,#16,#16,#15,#15
+        DB    #14,#14,#13,#12,#12,#11,#11
+        DB    #10,#0F,#0F,#0E,#0D,#0D,#0C
+        DB    #0B,#0A,#0A,#09,#08,#08,#07
+        DB    #06,#05,#05,#04,#03,#02,#02
+        DB    #01,#00
+
+CH_EXMP BIT   4,C
+        JR    Z,NODOT
+        LD    A,(HL)
+        OR    B
+        LD    (HL),A
+NODOT   JR    NOSTEP
+        LD    A,D
+        SUB   E
+        JR    NC,NOADD
+        ADD   A,64
+        RRC   B
+        JR    NC,NOADD
+        INC   HL
+NOADD   LD    D,A
+NOSTEP  INC   C
+CHAIN   EQU   $
+</pre>

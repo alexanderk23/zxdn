@@ -1,0 +1,453 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf8">
+<link href=style.css type=text/css rel=StyleSheet>
+<title>ZXDN :: Hardware articles</title>
+</head>
+
+<body link=#0000AF vlink=#0000AF alink=#0000AF>
+
+<h1>Электроника/схемы устройств</h1>
+<p><a href=index.html>< На главную</a></p>
+
+<a name=content><b>Список подразделов</b></a><br><br>
+<blockquote>
+<a href=#vidmodes>Видеорежимы</a><br>
+<a href=#sounddev>Звуковые устройства</a><br>
+<a href=#memupgra>Расширение памяти</a><br>
+<a href=#shramrom>ПЗУ, теневые ОЗУ</a><br>
+<a href=#diskcont>Контроллеры дисководов, жёстких дисков</a><br>
+<a href=#fddrives>Дисководы</a><br>
+<a href=#inputdev>Клавиатуры, мыши</a><br>
+<a href=#displayc>Подключение к мониторам, телевизорам</a><br>
+<a href=#intrface>Интерфейсы, шины</a><br>
+<a href=#modemhrd>Модемы</a><br>
+<a href=#fixemall>Доработки и исправления</a><br>
+&nbsp;<a href=#fixscorp>::ZS Scorpion</a><br>
+<a href=#miscdevc>Разные устройства</a><br>
+<a href=#miscidea>Разные идеи</a><br>
+</blockquote><br>
+
+
+
+<a name=vidmodes><b>Видеорежимы</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/zg02m384.txt>384x304</a></b> (ZX-Guide #2)<br>
+Видеорежим 384x304 для Pentagon, цветной, стандартное ограничение на два цвета в знакоместе. Позволяет использовать для отображения всю область экрана, включая бордюр.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/on79m512.txt>Дополнительный графический режим - 512x192</a></b> (Online #79,#80)<br>
+Видеорежим 512x192 для Pentagon, монохромный. Для отображения используется штатная область экрана, без использования бордюра.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv06m512.htm>Дополнительный графический режим - 512x192</a></b> (Deja Vu #06)<br>
+Другая версия предыдущей статьи, содержит некоторые отличия.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zpw2m512.htm>Расширенный экран (512x192)</a></b> (ZX Power #2)<br>
+Ещё одна версия описания схемы видеорежима 512x192.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0a128c.htm>128 цветов на Spectrum'е</a></b> (Deja Vu #0A)<br>
+Увеличение количества отображаемых цветов до 128 за счёт использования бита Flash (Flash color). Описание процесса выполнения доработки для ZS Scorpion.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zpw3brfl.txt>Bright + Flash</a></b> (ZX Power #3)<br>
+Увеличение количества отображаемых цветов за счёт использования бита Flash. Несовместима с Flash color! Описание процесса выполнения доработки для Pentagon, Leningrad, Profi разных версий.
+</blockquote>
+
+
+
+<a name=sounddev><b>Звуковые устройства</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/kn10aych.htm>Подключение AY-3-8910</a></b> (Krasnodar News #10)<br>
+Одна из популярных схем подключения микросхемы звукогенератора AY-3-8190.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf5covox.htm>LPT COVOX и не только...</a></b> (ZX Format #5)<br>
+Подключение Covox к компьютерам, не имеющим порта принтера (добавление 8-битного порта вывода).
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zg2dmasb.htm>DMA Sound Blaster</a></b> (ZX-Guide #2)<br>
+Простое устройство для Pentagon, позволяющее воспроизводить цифровой звук одновременно с работой программы.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dpt1qdra.htm>Квадрасистема для 'ZX Spectrum'</a></b> (Depth #1)<br>
+Схема подключения двух микросхем AY, с раздельными портами управления.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv2aycv.htm>Стерео-Covox на портах AY</a></b> (Adventurer #2)<br>
+Простейший стереофонический Covox на резисторах, подключаемый к портам ввода-вывода AY-3-8910.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/sd151inf.htm>SounDrive v1.51</a></b><br>
+Схема и описание последней версии устройства. Особенность этой версии - автоматическое переключение в режим совместимости с Covox.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv9dmau.htm>Звуковая карта с прямым доступом</a></b> (Adventurer #9)<br>
+Схема и описание DMA Ultrasound Card. Сборка, подключение к Pentagon 512K, отладка.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ec06dmau.htm>DMA Ultra Sound Card</a></b> (Echo #6)<br>
+Другой вариант описания DMA Ultrasound Card. Сборка, настройка, программирование.
+</blockquote>
+
+
+
+<a name=memupgra><b>Расширение памяти</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/z805simm.txt>SIMM&Speccy</a></b> (#Z80 #5)<br>
+Расширение памяти с помощью стандартных модулей SIMM30. Описание общих принципов подключения к различным моделям компьютеров (без схем), справочная информация.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv07simm.htm>Подключение SIMM к ZX Spectrum</a></b> (Deja Vu #07)<br>
+Общие рекомендации по расширению памяти ZX Spectrum-совместимых компьютеров с помощью стандартных модулей SIMM30.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv07pn1m.htm>Расширение памяти компьютеров типа Pentagon (Ленинград) до 1MB</a></b> (Deja Vu #07)<br>
+Расширение памяти компьютеров Pentagon и Ленинград до 1MB с помощью стандартного модуля SIMM30.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0asc1m.htm>Расширение памяти компьютера Scorpion до 1MB</a></b> (Deja Vu #0A)<br>
+Расширение памяти компьютера Scorpion ZS 256 Turbo+ с помощью стандартного модуля SIMM30.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/lp23b512.htm>Расширение памяти компьютера Балтик до 512KB</a></b> (LPrint #23)<br>
+Схема расширения, подробное описание работы схемы и выполнения доработки. На основе микросхем К565РУ7.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv09tg1m.htm>Расширение памяти компьютера &quot;Таганрог 128К&quot; до 1MB</a></b> (Deja Vu #09)<br>
+Расширение памяти компьютера &quot;Таганрог 128К&quot; с помощью стандартного модуля SIMM30. Также возможно расширение до 4MB.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/op05lviv.htm>&quot;Львовский вариант&quot;: 512K!</a></b> (Deja Vu #09)<br>
+Расширение памяти &quot;Львовского варианта&quot; (128К) до 512 килобайт. На основе микросхем 41256.
+</blockquote>
+
+
+
+<a name=shramrom><b>ПЗУ, теневые ОЗУ</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/lp13sram.htm>Shadow RAM</a></b> (LPrint #13)<br>
+Схема подключения теневого ОЗУ 32КБ ('кэш'), на основе схемы из Spectrofon #17.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/bc05cpow.htm>Кэш с резервным питанием</a></b> (Black Crow #05)<br>
+Схема подключения теневого ОЗУ 32КБ ('кэш') с резервным батарейным питанием, позволяющим сохранять информацию в нём при выключении компьютера.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv07rams.htm>Дополнительное ОЗУ </a></b> (Deja Vu #07)<br>
+Подключение теневого ОЗУ объёмом 32КБ. Подменяет ПЗУ BASIC 128 и TR-DOS.
+</blockquote>
+
+
+
+<a name=diskcont><b>Контроллеры дисководов, жёстких дисков</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/bc05beta.htm>Подключение контроллеров дисковода к ZX Spectrum</a></b> (Black Crow #05)<br>
+Описания общих способов подключения различных контроллеров Beta Disk Interface к различным моделям ZX Spectrum.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ad12tfdd.htm>FDD: новые возможности</a></b> (Adventurer #12)<br>
+Схема турбирования Beta Disk Interface и поддержки HD-дисков (высокой плотности). Расчитана на подключение к Profi.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv07vghd.htm>Доработка Pentagon'a для работы с дисками высокой плотности</a></b> (Deja Vu #07)<br>
+Схема турбирования компьютера Pentagon 128 (7 МГц); турбирование контроллера дисковода.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv09fdhd.htm>Доработка контроллера для работы с HD-дисками</a></b> (Deja Vu #09)<br>
+Более эффективный вариант турбирования компьютера и контроллера дисковода.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ad13idec.htm>Контроллер IDE</a></b> (Adventurer #13)<br>
+Схема контроллера IDE В.Матлаша. Инструкция по сборке и настройке. Чертёж платы. Краткое описание способов программного управления IDE-устройствами.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ec06fdd4.htm>Доработка контроллера для подключения 4-х дисководов</a></b> (Echo #6)<br>
+Доработка контроллеров дисководов, поддерживающих 2 дисковода, для подключения 4-х устройств.
+</blockquote>
+
+
+
+<a name=fddrives><b>Дисководы</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/adv3ngmd.txt>Дисководы МС 5305, МС 5311, МС5313</a></b> (Adventurer #3)<br>
+Рекомендации по эксплуатации дисководов МС 5305/5311/5313.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv5fd35.txt>Дисководы формата 3.5&quot;</a></b> (Adventurer #5)<br>
+Общее описание, подключение и использование на ZX Spectrum.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv7fdsw.txt>Дополнения по подключению дисководов на 3.5&quot;</a></b> (Adventurer #7)<br>
+Решение проблемы выбора трёхдюймового дисковода как устройства C вместо A.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/flt1fd35.txt>Даёшь Спектруму 3.5&quot; дисковод!</a></b> (Flash Time #1)<br>
+Подключение и использование 3.5&quot; дисководов на ZX Spectrum. Нумерация выводов на разъёме дисковода.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0afddt.htm>Юстировка головки FDD 3,5&quot;</a></b> (Deja Vu #0A)<br>
+Описание процесса юстировки головки 3.5&quot; дисковода.
+</blockquote>
+
+
+
+<a name=inputdev><b>Клавиатуры, мыши</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/ad11kmse.htm>Контроллер Kempston Mouse</a></b> (Adventurer #11)<br>
+Один из вариантов схемы контроллера Kempston-мыши (пассивной). Рекомендации по подключению к различным моделям компьютеров, переделке активных мышей, настройке устройства.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0akemp.htm>Kempston Mouse Interface (v2.1) на БИС KP580BB55A</a></b> (Deja Vu #0A)<br>
+Контроллер Kempston-мыши (пассивной) на основе микросхемы КР580ВВ55А. Рекомендуется для использования на компьютерах без турбо-режима.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf5kempm.htm>Схемa Kempston Mouse</a></b> (ZX Format #5)<br>
+Контроллер Kempston-мыши (пассивной). Схема. подключение, наладка, переделка активных мышей.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf5mouse.htm>Переделка мыши с интерфейсом RS232</a></b> (ZX Format #5)<br>
+Переделка активной мыши с интерфейсом RS232 для работы с интерфейсом Kempston Mouse.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/op13kemp.htm>Kempston Mouse</a></b> (Optron #13)<br>
+Ещё один вариант контроллера Kempston-мыши (пассивной).
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zpw1ayms.htm>AY Mouse</a></b> (ZX Power #1-2)<br>
+Контроллер AY Mouse - пассивной мыши, подключаемой к портам AY.
+</blockquote>
+
+
+
+<a name=displayc><b>Подключение к мониторам, телевизорам</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/bc05cgam.htm>Подключение CGA-мониторов к Спектрумам</a></b> (Black Crow #05)<br>
+Подключение компьютеров Pentagon 128, Scorpion ZS-256 к различным типам CGA-мониторов, включая русские 'Электрон', 'Электроника'.
+</blockquote>
+
+
+
+<a name=intrface><b>Интерфейсы, шины</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/on78comp.htm>Последовательный порт для Spectrum'a</a></b> (Online #78)<br>
+Схема адаптера COM-порта, для подключения модема, мыши и других устройств.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zpw2comp.htm>Последовательный порт для Spectrum'a</a></b> (ZX Power #2)<br>
+Другой вариант статьи со схемой адаптера COM-порта.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/bc05slot.htm>Слотовая система из подручного хлама</a></b> (Black Crow #05)<br>
+Схема слотовой системы на основе неисправной материнской платы IBM-PC. Назначение контактов шины соответствует стандартам Kay и Scorpion. Также позволяет использовать CMOS-часы неисправной платы.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/bc05scon.txt>Стандарты подключений</a></b> (Black Crow #05)<br>
+Описание стандартных распаек разъёмов видеовыхода и джойстика (DIN7), магнитофона и питания (DIN5), а также некоторых других.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ig10tape.htm>Универсальный TAPE интерфейс</a></b> (Info Guide #10)<br>
+Схема магнитофонного интерфейса. Для замены стандартных схем подключения магнитофона.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ec06prnt.txt>Интерфейсные разъёмы принтеров</a></b> (Echo #6)<br>
+Описание назначения контактов разъёмов различных принтеров с параллельным интерфейсом.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ms12prnt.txt>Подключение принтера Электроника МС6313</a></b> (MSD #12)<br>
+Назначение переключателей, контактов разъёма, подключение к ZX Spectrum.
+</blockquote>
+
+
+
+<a name=modemhrd><b>Модемы</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/lp05cdos.htm>Доработка модема</a></b> (LPrint #5)<br>
+Доработка для C-DOS модема, улучшающая реакцию на звонок без снижения качества связи.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zpw3hays.htm>Схема подключения Hayes-модема</a></b> (ZX Power #3)<br>
+Подключение Hayes-модема к ZX Spectrum.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ec07hays.htm>Подключение Hayes-модема к Spectrum'у</a></b> (Echo #7)<br>
+Схема подключения Hayes-модема к ZX Spectrum. Дополнительно - описание команд Hayes-модема.
+</blockquote>
+
+
+
+<a name=fixemall><b>Доработки и исправления</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/adv2atmf.htm>Порт #FD на (ATM) Turbo 2+</a></b> (Adventurer #2)<br>
+Схема доработки порта #FD для исправления проблем при неполной адресации порта переключения страниц.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv2pfix.htm>Доработки 'Pentagon 128'</a></b> (Adventurer #2)<br>
+Устранение самопроизвольного срабатывания некоторых клавиш плёночных клавиатур и устранение взаимного влияния Sinclair-джойстиков друг на друга,
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ig10sync.htm>Синхроселектор и прочие EGA-шности</a></b> (Info Guide #10)<br>
+Доработки для Pentagon 1024SL, решающие возможные проблемы при подключении EGA-монитора. Гашение &quot;светло-чёрного&quot; цвета, схема разделителя синхросмеси, также удлиняющая строчные синхроимпульсы.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0asc7f.txt>Чтение порта #7FFD</a></b> (Deja Vu #0A)<br>
+Описание способов доработки различных компьютеров для получения возможности чтения порта #7FFD.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/ec07byte.htm>Контроллер альтернативной памяти для ПК &quot;Байт&quot;</a></b> (Echo #7)<br>
+Доработка ПК &quot;Байт&quot; для увеличения быстродействия памяти (подмена Slow RAM).
+</blockquote>
+
+
+
+<a name=fixscorp><b>Доработки и исправления :: ZS Scorpion</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/dv01scrp.htm>О доработках компьютера Scorpion ZS 256</a></b> (Deja Vu #01)<br>
+Доработка схемы подключения AY на Scorpion и другая информация.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dpt1scrp.htm>Доработки Scorpion'а</a></b> (Depth #1)<br>
+Изменение адреса порта принтера, корректная дешифрация портов AY, сброс AY по нажатию кнопки Magic.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/adv7scdg.txt>Digital Music + Scorpion</a></b> (Adventurer #7)<br>
+Три доработки компьютера Scorpion, предназначенные для решения проблем с воспроизведением цифровой музыки через AY и Covox.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf1p1ffd.htm>Блокиpовка поpта #1FFD на Scorpion ZS 256</a></b> (ZX Format #1)<br>
+Доработка для ZS Scorpion, позволяющая отключать порт #1FFD.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0a1ffd.htm>#1FFD ON/OFF для Scorpion ZS 256</a></b> (Deja Vu #0A)<br>
+Схема отключения порта #1FFD для компьютера Scorpion. Основана на схеме из ZX Format #01 (не требует дополнительных деталей), но позволяет не только отключать, но и подключать порт без перезагрузки компьютера.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf2scptb.htm>Пеpеключатель Turbo/Normal для Scorpion ZS 256 Turbo</a></b> (ZX Format #2)<br>
+Установка выключателя турбо-режима для ZS Scorpion Turbo. Также описание программного управления турбо-режимом.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/asp7scrp.htm>Доработки для Scorpion</a></b> (ASpect #7)<br>
+Индикатор номера дисковода и его переключатель (меняет местами дисководы A и B).
+</blockquote>
+
+
+
+<a name=miscdevc><b>Разные устройства</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/bc05mled.htm>Цифровой индикатор</a></b> (Black Crow #05)<br>
+Схема цифрового индикатора состояния порта конфигурации и турбо-режима (#7FFD).
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dod1trsl.txt>Turbo & Slow</a></b> (Demo Or Die #1)<br>
+Схема, позволяющая останавливать или ускорять выполнение программы (не Turbo-режим).
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv0afddi.htm>Индикатор номера трека</a></b> (Deja Vu #0A)<br>
+Схема цифрового индикатора текущего номера трека дисковода. Варианты для различных типов индикаторов. Также схема индикатора записи на диск.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf6mview.htm>Multiviewer</a></b> (ZX Format #6)<br>
+Устройство, отображающее загрузку процессора цветными полосами на бордюре.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zf1slowd.htm>О тормозах для Spectrum'а</a></b> (ZX Format #1)<br>
+Устройство для замедления работы компьютера.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/dv08gluk.htm>Часы реального времени на основе 512ВИ1</a></b> (Deja Vu #08)<br>
+Схема часов реального времени на основе микросхемы 512ВИ1, вариант Mr. Gluk.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/op31cmos.htm>CMOS для всех!</a></b> (Optron #31)<br>
+Схема часов реального времени по стандарту Mr. Gluk. На основе микросхем 512ВИ1, MC146818 или DS1287.
+</blockquote>
+
+
+
+<a name=miscidea><b>Разные идеи</b></a><br><br>
+
+<blockquote>
+<b><a href=hardware/zh01cbus.txt>C-bus (based on Centronics interface)</a></b> (ZX-Hard #1)<br>
+Шина для внешних устройств на основе интерфейса Centronics.
+</blockquote>
+
+<blockquote>
+<b><a href=hardware/zh01cfma.txt>Fast Memory Access (FMA)</a></b> (ZX-Hard #1)<br>
+Идея аппаратной подготовки данных для пересылки с помощью стековых операций.
+</blockquote>
+
+
+</body></html>

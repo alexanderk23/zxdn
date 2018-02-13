@@ -1,0 +1,1139 @@
+Из газеты Echo #03, Брест, 03.1997
+
+
++----------------------------------------+
+|----- О формате музыкальных модулей ----|
+|--- Sound Tracker Pro by KSA software --|
++----------------------------------------+
+
+   VfNG/NEW
+
+   Как  и  обещалось  в  Echo 2, публикуем
+описание  формата компилированых модулей +
+player от STP PRO by KSA.
+
+   В  описании  могут встречатся отдельные
+неточности,  так  что  будьте внимательны.
+Это описание пишется не с целью устранения
+всех  вопросов, а только должно помочь вам
+разобраться в некоторых вещах при работе с
+player'ом.
+
++0 Скорость проигрывания;
+
++1 Смещение до TABL1;
+
++3,4 Смещение до TABL2;
+
++5,6 Смещение до TABL3;
+
++7,8 Смещение до TABL4;
+
++9   В этом байте содержится число элемен-
+тов, к которым надо прибавить реальный ад-
+рес  +0 в памяти. Это делает секция иници-
+ализации. Если этот байт=0, значит инициа-
+лизация  уже  проведена.  Первый  элемент,
+требующий  настройки,  находится  с адреса
+TABL2.  Каждый  элемент-2  байта (младший,
+старший байты смещения от +0);
+
++10 Первый паттерн;
+
+TABL1+0 длина музыки в позициях;
+
+TABL1+1 номер позиции для зацикливания;
+
+TABL1+2 по 2 байта/позиция:
+
+        +0 6*номер PATTERN;
+        +1 HEIGHT  (отклонения в нотах от
+           обычного звучания PATTERN);
+
+TABL2 описатели  PATTERN'ов:  по  2  байта
+смещения  для  каждого канала, значит по 6
+байт/PATTERN;
+
+TABL3 смещения до орнаментов. 0-й орнамент
+служит для отключения орнаментов в канале;
+
+ТABL4 смещения до сэмплов;
+
+формат орнамента:
+
++0 точка зацикливания;
++1 полная длина;
++2, 1*(+0) отклонения от значения ноты;
+
+формат сэмпла:
+
++0 точка зацикливания;
++1 полная длина;
++2 по 4 байта/QUARK:
+
+        +0 биты 0-3 амплитуда;
+           бит 4 маска тона;
+           бит 7 маска шума;
+
+        +1 бит 0 маска огибающей;
+           биты 1-5 частота шума;
+
+        +2,3 байты частотного вибратто;
+
+Каждый описатель PATTERN содержит указате-
+ли на описатели каналов. Каналы анализиру-
+ются следующим образом:
+
+        LD   HL,CHAN_POS
+        LD   A,(HL)
+        OR   A
+        JR   Z,конец PATTERN
+        LD   C,#10
+LOOP    LD   A,(HL)
+        INC  HL
+        CP   #C0
+        JR   C,L9
+        SUB  C
+        JR   NC,L1
+        SUB  C
+        JR   NC,L2
+        SUB  C
+        JR   NC,L3
+        SUB  C
+        JR   L4
+L9      SUB  #80
+        JR   NC,L5
+        SUB  C
+        JR   NC,L6
+        SBC  A,C
+        JR   NC,L7
+L8      ADD  A,#60
+в A-номер ноты. Ее установка, выход;
+L7
+в A-номер сэмпла. LOOP;
+L6
+в A-номер орнамента. LOOP;
+L5
+в A-сколько  INT'ов  не надо анализировать
+канал. LOOP;
+L4
+в A-тип огибающей. В следующем байте-пери-
+од.  Установка  регистра  амплитуды в #1F,
+LOOP;
+L3
+выключение канала, выход;
+L2
+установка величины, полученой в L5, выход;
+L1      JR   Z,L0
+        DEC  A
+в A-число,  которое надо отнять от #0F для
+получения громкости. LOOP;
+L0
+в следующем байте-glissade. LOOP;
+
+Обязательно  просмотрите  player перед ис-
+пользованием   приведенных  здесь  данных.
+
+;-----------------------------------------
+;SOUND TRACKER PRO PLAYER
+;DECOMPILED BY VfNG/NEW'97 FOR ECHO-3!
+;THANX 2 STALKER 4 XLNT DIZASSEMBLER!
+;-----------------------------------------
+;MUSIC  EQU     адрес скомпилированого
+;               блока
+;-----------------------------------------
+LLC000  LD      HL,MUSIC
+        JP      INIT        ;инициализация
+        JP      PLAY        ;проигрывание
+        LD      BC,(LLC0FF) ;выключение
+        JP      SILENCE
+;-----------------------------------------
+        DEFB    #00
+        DEFB    "SOUND TRACKER PRO"
+;-----------------------------------------
+LLC046  DEFB    #00,#00,#00
+LLC049  DEFB    #70,#80,#F1,#D0,#00
+;-----------------------------------------
+INIT    DI
+        LD      (LLC0F0),HL
+        LD      A,#FC
+        LD      (LLC49C),A
+        LD      (LLC506),A
+        LD      (LLC573),A
+        LD      A,(HL)
+        INC     HL
+        LD      (LLC114),A
+        CALL    LLC0EA
+        LD      A,(HL)
+        LD      (LLC678),A
+        INC     HL
+        LD      A,(HL)
+        LD      (LLC67C),A
+        INC     HL
+        LD      (LLC682),HL
+        CALL    LLC0E9
+        LD      (LLC68A),HL
+        PUSH    HL
+        CALL    LLC0E9
+        LD      (LLC3A3),HL
+        LD      (LLC2B3),HL
+        LD      (LLC1CD),HL
+        CALL    LLC0E9
+        LD      (LLC344),HL
+        LD      (LLC254),HL
+        LD      (LLC180),HL
+        EX      DE,HL
+        LD      A,(HL)
+        LD      (HL),#00
+        POP     HL
+        OR      A
+        JR      Z,LLC0A6
+LLC099  CALL    LLC0EA
+        EX      DE,HL
+        DEC     HL
+        LD      (HL),D
+        DEC     HL
+        LD      (HL),E
+        INC     HL
+        INC     HL
+        DEC     A
+        JR      NZ,LLC099
+LLC0A6  LD      HL,LLC049
+        LD      C,#03
+        LD      (LLC2E5),HL
+        LD      (LLC1F5),HL
+        LD      (LLC11B),HL
+        LD      H,A
+        LD      L,A
+        LD      (LLC427),HL
+        LD      (LLC3E3),HL
+        LD      (LLC421),HL
+        LD      (LLC3DD),HL
+        LD      (LLC10B),A
+        DEC     A
+        LD      (LLC675),A
+SILENCE XOR     A
+        LD      (LLC5D3),A
+        LD      HL,LLC0F4
+        LD      B,#0D
+LLC0D2  LD      (HL),A
+        INC     HL
+        DJNZ    LLC0D2
+        LD      A,C
+        LD      (LLC0FF),A
+        LD      BC,#FFFD
+        LD      A,#0C
+        OUT     (C),A
+        XOR     A
+        LD      B,#BF
+        OUT     (C),A
+        JP      LLC5C5
+LLC0E9  EX      DE,HL
+LLC0EA  LD      E,(HL)
+        INC     HL
+        LD      D,(HL)
+        INC     HL
+        EX      DE,HL
+        LD      BC,#0000
+LLC0F0  EQU     $-#02
+        ADD     HL,BC
+        RET
+;-----------------------------------------
+LLC0F4  DEFB    #00,#00
+LLC0F6  DEFB    #00,#00
+LLC0F8  DEFB    #00,#00
+LLC0FA  DEFB    #00
+LLC0FB  DEFB    #00
+LLC0FC  DEFB    #00
+LLC0FD  DEFB    #00
+LLC0FE  DEFB    #00
+LLC0FF  DEFB    #00
+LLC100  DEFB    #00
+
+
+;-----------------------------------------
+PLAY    DI
+        LD      (LLC5C3),SP
+        LD      D,#00
+        EXX
+        LD      BC,#60F0
+LLC10B  EQU     $-#01
+        LD      HL,LLC0FF
+        DEC     (HL)
+        JP      NZ,LLC1E8
+        LD      (HL),#00
+LLC114  EQU     $-#01
+        INC     HL
+        DEC     (HL)
+        JP      P,LLC3D0
+        LD      HL,LLC000
+LLC11B  EQU     $-#02
+        OR      (HL)
+        JP      Z,LLC3D0
+LLC121  LD      A,(HL)
+        INC     HL
+        CP      #C0
+        JR      C,LLC134
+        SUB     C
+        JR      NC,LLC162
+        SUB     C
+        JR      NC,LLC16B
+        SUB     C
+        JR      NC,LLC171
+        SUB     C
+        JP      LLC19F
+LLC134  SUB     #80
+        JR      NC,LLC199
+        SUB     C
+        JP      NC,LLC1C4
+        SBC     A,C
+        JR      NC,LLC17C
+        ADD     A,B
+        LD      (LLC569),A
+        LD      (LLC11B),HL
+        XOR     A
+        LD      (LLC573),A
+        LD      (LLC557),A
+        LD      L,A
+        LD      H,A
+        LD      (LLC5AF),HL
+        JP      LLC3CB
+LLC155  LD      A,(HL)
+        INC     HL
+        LD      (LLC5B2),A
+        RLA
+        SBC     A,A
+        LD      (LLC5B3),A
+        JP      LLC121
+LLC162  JR      Z,LLC155
+        DEC     A
+        LD      (LLC58F),A
+        JP      LLC121
+LLC16B  LD      (LLC11B),HL
+        JP      LLC3CB
+LLC171  LD      A,#FC
+        LD      (LLC573),A
+        LD      (LLC11B),HL
+        JP      LLC3CB
+LLC17C  ADD     A,A
+        EXX
+        LD      E,A
+        LD      HL,LLC000
+LLC180  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC584),A
+        INC     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC580),A
+        LD      (LLC575),HL
+        EXX
+        JP      LLC121
+LLC199  LD      (LLC3CC),A
+        JP      LLC121
+LLC19F  LD      (LLC459),A
+        LD      A,#1F
+        LD      (LLC59B),A
+        LD      A,(HL)
+        INC     HL
+        LD      (LLC45E),A
+        LD      DE,LLC046
+        LD      (LLC55A),DE
+        XOR     A
+        LD      (LLC564),A
+        LD      (LLC5B2),A
+        LD      (LLC5B3),A
+        INC     A
+        LD      (LLC560),A
+        JP      LLC121
+LLC1C4  ADD     A,A
+        EXX
+        LD      E,A
+        LD      A,#0F
+        LD      (LLC59B),A
+        LD      HL,LLC000
+LLC1CD  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        LD      (LLC564),A
+        INC     HL
+        LD      A,(HL)
+        LD      (LLC560),A
+        INC     HL
+        LD      (LLC55A),HL
+        LD      L,D
+        LD      H,D
+        LD      (LLC5B2),HL
+        EXX
+        JP      LLC121
+LLC1E8  LD      A,(HL)
+        DEC     A
+        JP      NZ,LLC2DB
+        LD      HL,LLC0FD
+        DEC     (HL)
+        JP      P,LLC47F
+        LD      HL,LLC000
+LLC1F5  EQU     $-#02
+        OR      (HL)
+        JP      Z,LLC47F
+LLC1FB  LD      A,(HL)
+        INC     HL
+        CP      #C0
+        JR      C,LLC20E
+        SUB     C
+        JR      NC,LLC236
+        SUB     C
+        JR      NC,LLC23F
+        SUB     C
+        JR      NC,LLC245
+        SUB     C
+        JP      LLC273
+LLC20E  SUB     #80
+        JR      NC,LLC26D
+        SUB     C
+        JP      NC,LLC2AA
+        SBC     A,C
+        JR      NC,LLC250
+        ADD     A,B
+        LD      (LLC407),A
+        LD      (LLC1F5),HL
+        XOR     A
+        LD      (LLC40C),A
+        LD      L,A
+        LD      H,A
+        LD      (LLC3DD),HL
+        LD      A,#22
+        LD      (LLC3DF),A
+        LD      A,#32
+        LD      (LLC469),A
+        JP      LLC2D3
+LLC236  JR      Z,LLC29D
+        DEC     A
+        LD      (LLC3FD),A
+        JP      LLC1FB
+LLC23F  LD      (LLC1F5),HL
+        JP      LLC2D3
+LLC245  LD      A,#FC
+        LD      (LLC40C),A
+        LD      (LLC1F5),HL
+        JP      LLC2D3
+LLC250  ADD     A,A
+        EXX
+        LD      E,A
+        LD      HL,LLC000
+LLC254  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC3F8),A
+        INC     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC3EE),A
+        LD      (LLC3D1),HL
+        EXX
+        JP      LLC1FB
+LLC26D  LD      (LLC2D4),A
+        JP      LLC1FB
+LLC273  LD      (LLC459),A
+        LD      A,#1F
+        LD      (LLC402),A
+        LD      A,(HL)
+        INC     HL
+        LD      (LLC45E),A
+        LD      DE,LLC046
+        LD      (LLC3D7),DE
+        LD      A,#22
+        LD      (LLC3E5),A
+        XOR     A
+        LD      (LLC3F3),A
+        LD      (LLC3E3),A
+        LD      (LLC3E4),A
+        INC     A
+        LD      (LLC3E9),A
+        JP      LLC1FB
+LLC29D  LD      A,(HL)
+        INC     HL
+        LD      (LLC3E3),A
+        RLA
+        SBC     A,A
+        LD      (LLC3E4),A
+        JP      LLC1FB
+LLC2AA  ADD     A,A
+        EXX
+        LD      E,A
+        LD      A,#0F
+        LD      (LLC402),A
+        LD      HL,LLC000
+LLC2B3  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        LD      (LLC3F3),A
+        INC     HL
+        LD      A,(HL)
+        LD      (LLC3E9),A
+        INC     HL
+        LD      (LLC3D7),HL
+        LD      L,D
+        LD      H,D
+        LD      (LLC3E3),HL
+        LD      A,#22
+        LD      (LLC3E5),A
+        EXX
+        JP      LLC1FB
+LLC2D3  LD      A,#00
+LLC2D4  EQU     $-#01
+        LD      (LLC0FD),A
+        JP      LLC47F
+LLC2DB  DEC     A
+        JP      NZ,LLC47F
+        DEC     HL
+        DEC     (HL)
+        JP      P,LLC47F
+LLC2E4  LD      HL,LLC000
+LLC2E5  EQU     $-#02
+        OR      (HL)
+        JP      Z,LLC665
+LLC2EB  LD      A,(HL)
+        INC     HL
+        CP      #C0
+        JR      C,LLC2FE
+        SUB     C
+        JR      NC,LLC326
+        SUB     C
+        JR      NC,LLC32F
+        SUB     C
+        JR      NC,LLC335
+        SUB     C
+        JP      LLC363
+LLC2FE  SUB     #80
+        JR      NC,LLC35D
+        SUB     C
+        JP      NC,LLC39A
+        SBC     A,C
+        JR      NC,LLC340
+        ADD     A,B
+        LD      (LLC44B),A
+        LD      (LLC2E5),HL
+        XOR     A
+        LD      (LLC450),A
+        LD      L,A
+        LD      H,A
+        LD      (LLC421),HL
+        LD      A,#22
+        LD      (LLC423),A
+        LD      A,#32
+        LD      (LLC466),A
+        JP      LLC3C3
+LLC326  JR      Z,LLC38D
+        DEC     A
+        LD      (LLC441),A
+        JP      LLC2EB
+LLC32F  LD      (LLC2E5),HL
+        JP      LLC3C3
+LLC335  LD      A,#FC
+        LD      (LLC450),A
+        LD      (LLC2E5),HL
+        JP      LLC3C3
+LLC340  ADD     A,A
+        EXX
+        LD      E,A
+        LD      HL,LLC000
+LLC344  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC43C),A
+        INC     HL
+        LD      A,(HL)
+        ADD     A,A
+        ADD     A,A
+        LD      (LLC432),A
+        LD      (LLC415),HL
+        EXX
+        JP      LLC2EB
+LLC35D  LD      (LLC3C4),A
+        JP      LLC2EB
+LLC363  LD      (LLC459),A
+        LD      A,#1F
+        LD      (LLC446),A
+        LD      A,(HL)
+        INC     HL
+        LD      (LLC45E),A
+        LD      DE,LLC046
+        LD      (LLC41B),DE
+        LD      A,#22
+        LD      (LLC429),A
+        XOR     A
+        LD      (LLC437),A
+        LD      (LLC427),A
+        LD      (LLC428),A
+        INC     A
+        LD      (LLC42D),A
+        JP      LLC2EB
+LLC38D  LD      A,(HL)
+        INC     HL
+        LD      (LLC427),A
+        RLA
+        SBC     A,A
+        LD      (LLC428),A
+        JP      LLC2EB
+LLC39A  ADD     A,A
+        EXX
+        LD      E,A
+        LD      A,#0F
+        LD      (LLC446),A
+        LD      HL,LLC000
+LLC3A3  EQU     $-#02
+        ADD     HL,DE
+        LD      SP,HL
+        POP     HL
+        LD      A,(HL)
+        LD      (LLC437),A
+        INC     HL
+        LD      A,(HL)
+        LD      (LLC42D),A
+        INC     HL
+        LD      (LLC41B),HL
+        LD      L,D
+        LD      H,D
+        LD      (LLC427),HL
+        LD      A,#22
+        LD      (LLC429),A
+        EXX
+        JP      LLC2EB
+LLC3C3  LD      A,#00
+LLC3C4  EQU     $-#01
+        LD      (LLC0FE),A
+        JP      LLC47F
+LLC3CB  LD      A,#00
+LLC3CC  EQU     $-#01
+        LD      (LLC100),A
+LLC3D0  LD      HL,LLC000
+LLC3D1  EQU     $-#02
+        LD      (LLC508),HL
+        LD      HL,LLC000
+LLC3D7  EQU     $-#02
+        LD      (LLC4ED),HL
+        LD      HL,LLC000
+LLC3DD  EQU     $-#02
+LLC3DF  LD      (LLC543),HL
+        LD      HL,LLC000
+LLC3E3  EQU     $-#02
+LLC3E5  LD      (LLC546),HL
+LLC3E4  EQU     $-#04
+        LD      A,#00
+LLC3E9  EQU     $-#01
+        LD      (LLC4F3),A
+        LD      A,#00
+LLC3EE  EQU     $-#01
+        LD      (LLC513),A
+        LD      A,#00
+LLC3F3  EQU     $-#01
+        LD      (LLC4F7),A
+        LD      A,#00
+LLC3F8  EQU     $-#01
+        LD      (LLC517),A
+        LD      A,#00
+LLC3FD  EQU     $-#01
+        LD      (LLC522),A
+        LD      A,#0F
+LLC402  EQU     $-#01
+        LD      (LLC52E),A
+        LD      A,#00
+LLC407  EQU     $-#01
+        LD      (LLC4FC),A
+        LD      A,#00
+LLC40C  EQU     $-#01
+        CP      #01
+        JR      Z,LLC414
+        LD      (LLC506),A
+LLC414  LD      HL,LLC000
+LLC415  EQU     $-#02
+        LD      (LLC49E),HL
+        LD      HL,LLC000
+LLC41B  EQU     $-#02
+        LD      (LLC483),HL
+        LD      HL,LLC000
+LLC421  EQU     $-#02
+LLC423  LD      (LLC4CF),HL
+        LD      HL,LLC000
+LLC427  EQU     $-#02
+LLC429  LD      (LLC4D2),HL
+LLC428  EQU     $-#04
+        LD      A,#00
+LLC42D  EQU     $-#01
+        LD      (LLC489),A
+        LD      A,#00
+LLC432  EQU     $-#01
+        LD      (LLC4A9),A
+        LD      A,#00
+LLC437  EQU     $-#01
+        LD      (LLC48D),A
+        LD      A,#00
+LLC43C  EQU     $-#01
+        LD      (LLC4AD),A
+        LD      A,#00
+LLC441  EQU     $-#01
+        LD      (LLC4B8),A
+        LD      A,#0F
+LLC446  EQU     $-#01
+        LD      (LLC4C4),A
+        LD      A,#00
+LLC44B  EQU     $-#01
+        LD      (LLC492),A
+        LD      A,#00
+LLC450  EQU     $-#01
+        CP      #01
+        JR      Z,LLC458
+        LD      (LLC49C),A
+LLC458  LD      A,#00
+LLC459  EQU     $-#01
+        LD      (LLC5D3),A
+        LD      A,#00
+LLC45E  EQU     $-#01
+        LD      (LLC5E1),A
+        XOR     A
+        LD      (LLC459),A
+LLC466  LD      (LLC480),A
+LLC469  LD      (LLC4EA),A
+        INC     A
+        LD      (LLC450),A
+        LD      (LLC466),A
+        LD      (LLC40C),A
+        LD      (LLC469),A
+        LD      (LLC423),A
+        LD      (LLC3DF),A
+LLC47F  LD      DE,#0000
+LLC480  EQU     $-#02
+        LD      HL,LLC000
+LLC483  EQU     $-#02
+        ADD     HL,DE
+        INC     E
+        LD      A,E
+        CP      #00
+LLC489  EQU     $-#01
+        JR      NZ,LLC48E
+        LD      A,#00
+LLC48D  EQU     $-#01
+LLC48E  LD      (LLC480),A
+        LD      A,#00
+LLC492  EQU     $-#01
+        ADD     A,(HL)
+        ADD     A,A
+        LD      E,A
+        LD      HL,LLC6A8
+        ADD     HL,DE
+        LD      SP,HL
+        LD      A,#00
+LLC49C  EQU     $-#01
+        LD      HL,LLC000
+LLC49E  EQU     $-#02
+        INC     A
+        JP      M,LLC641
+        LD      E,A
+        ADD     HL,DE
+        ADD     A,#03
+        CP      #00
+LLC4A9  EQU     $-#01
+        JR      NZ,LLC4AE
+        LD      A,#00
+LLC4AD  EQU     $-#01
+LLC4AE  LD      (LLC49C),A
+        POP     BC
+        LD      SP,HL
+        POP     DE
+        LD      A,E
+        AND     #0F
+        SUB     #00
+LLC4B8  EQU     $-#01
+        LD      L,A
+        CCF
+        SBC     A,A
+        AND     L
+        SRL     D
+        JR      NC,LLC4C3
+        OR      #10
+LLC4C3  AND     #00
+LLC4C4  EQU     $-#01
+        LD      (LLC0FA),A
+        LD      A,E
+        RLCA
+        JR      C,LLC4CE
+        LD      XH,D
+LLC4CE  LD      HL,LLC000
+LLC4CF  EQU     $-#02
+        LD      DE,#0000
+LLC4D2  EQU     $-#02
+        ADD     HL,DE
+        LD      (LLC4CF),HL
+        ADD     HL,BC
+        POP     BC
+        ADD     HL,BC
+        RLCA
+        RLCA
+        RLCA
+        AND     #0F
+        LD      XL,A
+        LD      A,H
+        AND     #0F
+        LD      H,A
+        LD      (LLC0F4),HL
+LLC4E9  LD      DE,#0000
+LLC4EA  EQU     $-#02
+        LD      HL,LLC000
+LLC4ED  EQU     $-#02
+        ADD     HL,DE
+        INC     E
+        LD      A,E
+        CP      #00
+LLC4F3  EQU     $-#01
+        JR      NZ,LLC4F8
+        LD      A,#00
+LLC4F7  EQU     $-#01
+LLC4F8  LD      (LLC4EA),A
+        LD      A,#00
+LLC4FC  EQU     $-#01
+        ADD     A,(HL)
+        ADD     A,A
+        LD      E,A
+        LD      HL,LLC6A8
+        ADD     HL,DE
+        LD      SP,HL
+        LD      A,#00
+LLC506  EQU     $-#01
+        LD      HL,LLC000
+LLC508  EQU     $-#02
+        INC     A
+        JP      M,LLC64B
+        LD      E,A
+        ADD     HL,DE
+        ADD     A,#03
+        CP      #00
+LLC513  EQU     $-#01
+        JR      NZ,LLC518
+        LD      A,#00
+LLC517  EQU     $-#01
+LLC518  LD      (LLC506),A
+        POP     BC
+        LD      SP,HL
+        POP     DE
+        LD      A,E
+        AND     #0F
+        SUB     #00
+LLC522  EQU     $-#01
+        LD      L,A
+        CCF
+        SBC     A,A
+        AND     L
+        SRL     D
+        JR      NC,LLC52D
+        OR      #10
+LLC52D  AND     #00
+LLC52E  EQU     $-#01
+        LD      (LLC0FB),A
+        LD      A,E
+        RRCA
+        RRCA
+        RRCA
+        AND     #1E
+        OR      XL
+        LD      XL,A
+        AND     #10
+        JR      NZ,LLC542
+        LD      XH,D
+LLC542  LD      HL,LLC000
+LLC543  EQU     $-#02
+        LD      DE,#0000
+LLC546  EQU     $-#02
+        ADD     HL,DE
+        LD      (LLC543),HL
+        ADD     HL,BC
+        POP     BC
+        ADD     HL,BC
+        LD      A,H
+        AND     #0F
+        LD      H,A
+        LD      (LLC0F6),HL
+LLC556  LD      DE,#0000
+LLC557  EQU     $-#02
+        LD      HL,LLC000
+LLC55A  EQU     $-#02
+        ADD     HL,DE
+        INC     E
+        LD      A,E
+        CP      #00
+LLC560  EQU     $-#01
+        JR      NZ,LLC565
+        LD      A,#00
+LLC564  EQU     $-#01
+LLC565  LD      (LLC557),A
+        LD      A,#00
+LLC569  EQU     $-#01
+        ADD     A,(HL)
+        ADD     A,A
+        LD      E,A
+        LD      HL,LLC6A8
+        ADD     HL,DE
+        LD      SP,HL
+        LD      A,#00
+LLC573  EQU     $-#01
+        LD      HL,LLC000
+LLC575  EQU     $-#02
+        INC     A
+        JP      M,LLC658
+        LD      E,A
+        ADD     HL,DE
+        ADD     A,#03
+        CP      #00
+LLC580  EQU     $-#01
+        JR      NZ,LLC585
+        LD      A,#00
+LLC584  EQU     $-#01
+LLC585  LD      (LLC573),A
+        POP     BC
+        LD      SP,HL
+        POP     DE
+        LD      A,E
+        AND     #0F
+        SUB     #00
+LLC58F  EQU     $-#01
+        LD      L,A
+        CCF
+        SBC     A,A
+        AND     L
+        SRL     D
+        JR      NC,LLC59A
+        OR      #10
+LLC59A  AND     #00
+LLC59B  EQU     $-#01
+        LD      (LLC0FC),A
+        LD      A,E
+        RRCA
+        RRCA
+        AND     #3C
+        OR      XL
+        LD      XL,A
+        AND     #20
+        JR      NZ,LLC5AE
+        LD      XH,D
+LLC5AE  LD      HL,LLC000
+LLC5AF  EQU     $-#02
+        LD      DE,#0000
+LLC5B2  EQU     $-#02
+        ADD     HL,DE
+LLC5B3  EQU     $-#02
+        LD      (LLC5AF),HL
+        ADD     HL,BC
+        POP     BC
+        ADD     HL,BC
+        LD      A,H
+        AND     #0F
+        LD      H,A
+        LD      (LLC0F8),HL
+LLC5C2  LD      SP,#0000
+LLC5C3  EQU     $-#02
+LLC5C5  LD      HL,LLC0FC
+        LD      DE,#FFBF
+        LD      BC,#FFFD
+        LD      A,#0D
+        OUT     (C),A
+        LD      A,#00
+LLC5D3  EQU     $-#01
+        OR      A
+        JR      Z,LLC5E5
+        LD      B,E
+        OUT     (C),A
+        LD      A,#0B
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        LD      A,#00
+LLC5E1  EQU     $-#01
+        OUT     (C),A
+        LD      B,D
+LLC5E5  LD      A,#0A
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        LD      A,XL
+        OUT     (C),A
+        LD      A,#06
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        LD      A,XH
+        OUT     (C),A
+        LD      A,#05
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        DEC     A
+        LD      B,D
+        OUT     (C),A
+        LD      B,E
+        OUTD
+        LD      (LLC5D3),A
+        LD      HL,#2758
+        EXX
+        EI
+        RET
+LLC641  XOR     A
+        LD      (LLC0FA),A
+        LD      XL,#09
+        JP      LLC4E9
+LLC64B  XOR     A
+        LD      (LLC0FB),A
+        LD      A,XL
+        OR      #12
+        LD      XL,A
+        JP      LLC556
+LLC658  XOR     A
+        LD      (LLC0FC),A
+        LD      A,XL
+        OR      #24
+        LD      XL,A
+        JP      LLC5C2
+LLC665  LD      HL,(LLC1F5)
+        OR      (HL)
+        JP      NZ,LLC47F
+        LD      HL,(LLC11B)
+        OR      (HL)
+        JP      NZ,LLC47F
+        LD      B,A
+        LD      A,#00
+LLC675  EQU     $-#01
+        INC     A
+        CP      #00
+LLC678  EQU     $-#01
+        JR      NZ,LLC67D
+        LD      A,#00
+LLC67C  EQU     $-#01
+LLC67D  LD      (LLC675),A
+        LD      C,A
+        LD      HL,LLC000
+LLC682  EQU     $-#02
+        ADD     HL,BC
+        ADD     HL,BC
+        LD      C,(HL)
+        INC     HL
+        LD      A,(HL)
+        LD      HL,LLC000
+LLC68A  EQU     $-#02
+        ADD     HL,BC
+        LD      SP,HL
+        POP     HL
+        LD      (LLC2E5),HL
+        POP     HL
+        LD      (LLC1F5),HL
+        POP     HL
+        LD      (LLC11B),HL
+        ADD     A,#60
+        LD      (LLC10B),A
+        LD      B,A
+        LD      C,#F0
+        JP      LLC2E4
+;-----------------------------------------
+        DEFB    "KSA"
+;-----------------------------------------
+LLC6A8  DEFB    #F8,#0E,#10,#0E,#60
+        DEFB    #0D,#80,#0C,#D8
+        DEFB    #0B,#28,#0B,#88
+        DEFB    #0A,#F0,#09,#60
+        DEFB    #09,#E0,#08,#58
+        DEFB    #08,#E0,#07,#7C
+        DEFB    #07,#08,#07,#B0
+        DEFB    #06,#40,#06,#EC
+        DEFB    #05,#94,#05,#44
+        DEFB    #05,#F8,#04,#B0
+        DEFB    #04,#70,#04,#2C
+        DEFB    #04,#F0,#03,#BE
+        DEFB    #03,#84,#03,#58
+        DEFB    #03,#20,#03,#F6
+        DEFB    #02,#CA,#02,#A2
+        DEFB    #02,#7C,#02,#58
+        DEFB    #02,#38,#02,#16
+        DEFB    #02,#F8,#01,#DF
+        DEFB    #01,#C2,#01,#AC
+        DEFB    #01,#90,#01,#7B
+        DEFB    #01,#65,#01,#51
+        DEFB    #01,#3E,#01,#2C
+        DEFB    #01,#1C,#01,#0B
+        DEFB    #01,#FC,#00,#EF
+        DEFB    #00,#E1,#00,#D6
+        DEFB    #00,#C8,#00,#BD
+        DEFB    #00,#B2,#00,#A8
+        DEFB    #00,#9F,#00,#96
+        DEFB    #00,#8E,#00,#85
+        DEFB    #00,#7E,#00,#77
+        DEFB    #00,#70,#00,#6B
+        DEFB    #00,#64,#00,#5E
+        DEFB    #00,#59,#00,#54
+        DEFB    #00,#4F,#00,#4B
+        DEFB    #00,#47,#00,#42
+        DEFB    #00,#3F,#00,#3B
+        DEFB    #00,#38,#00,#35
+        DEFB    #00,#32,#00,#2F
+        DEFB    #00,#2C,#00,#2A
+        DEFB    #00,#27,#00,#25
+        DEFB    #00,#23,#00,#21
+        DEFB    #00,#1F,#00,#1D
+        DEFB    #00,#1C,#00,#1A
+        DEFB    #00,#19,#00,#17
+        DEFB    #00,#16,#00,#15
+        DEFB    #00,#13,#00,#12
+        DEFB    #00,#11,#00,#10
+        DEFB    #00,#0F,#00
+;-----------------------------------------

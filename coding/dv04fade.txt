@@ -1,0 +1,541 @@
+Из журнала Deja Vu #04, Кемерово, 01.04.98
+
+
+
+Автор: Cardinal/PGC/BD
+__________________________________________
+
+   В этой статье речь пойдет  о  различных
+проигрывателях AY-шной музыки. Я вам  рас-
+скажу о довольно важном эффекте  (особенно
+в демомэйкерстве) -о плавном затухании му-
+зыки в любой момент времени. Сразу  скажу,
+что ни в одном из  существующих  PLAYER'ов
+компилированных музонов (будь то Pro Trac-
+ker; Sound Tracker Pro by KSA и  т.д)  нет
+такой функции, которая позволяла бы плавно
+уменьшать громкость музыки. А посему  пой-
+дем по-порядку...
+   Чтобы сделать этот эффект, надо  понять
+как процессор общается с AY и немножко по-
+копаться в PLAYERе. В сопроцессоре AY есть
+16 регистров, с помощью которых  генериру-
+ются различные звуки. Каждый из  этих  ре-
+гистров выполняет свою функцию. Обо всех я
+говорить не стану, а остановлюсь только на
+трех. Это регистры R8, R9, R10, младшие  5
+битов которых управляют громкостью (ампли-
+тудой) каналов A, B и C. Вообще, чтобы по-
+лучить доступ к какому-нибудь регистру AY,
+нужно его  номер  (от 0 до 15)  занести  в
+порт #FFFD, а значение - в порт #BFFD.
+   Я специально не говорю об этом  подроб-
+но, т.к. это было описано в  книге  А.Лар-
+чеко и Н.Родионова "ZX-Spectrum  &  TR-DOS
+для пользователей и программистов".
+   Весь этот разговор я завел к тому,  что
+надо в PLAYER'е найти место, где заносятся
+некоторые значения в регистры R8,R9 и R10.
+Так вот, надо перед тем  местом  поставить
+ловушку, (CALL address, где address - ваша
+процедурка) которая изменит  (уменьшит  на
+определенное значение)  байты  этих  самых
+значений, прежде чем PLAYER  выдаст  их  в
+регистры R8, R9 и R10 музыкального  сопро-
+цессора. В приложении вы найдете пять  ис-
+ходников в формате ALASM v3.8c. Каждый ис-
+ходник годится только для музонов компили-
+рованных в следующих редакторах и компиля-
+торах:  Sound Tracker Pro by KSA Software;
+Pro Tracker v2.4;  Sound Tracker Song Com-
+piler v1.2; Sound Tracker Music's Recompi-
+ler v2.1 by KSA; Pro Tracker v 2.1 by Gol-
+den Disk.
+   Исходники довольно сырые, но хорошо де-
+монстрируют эффект. Как ими  пользоваться?
+Загружаете исходник в ассемблер,  выходите
+в STS, подгружаете компилированный музон с
+PLAYER'ом, возвращаетесь в редактор,  под-
+правляете значение метки MUZAK (она указы-
+вает на адрес подгружаемого  музона),  ас-
+семблируете и запускаете. Если вы услышали
+музыку, значит со слухом у вас все в  пол-
+ном порядке :-)... Потом попробуйте нажать
+кнопку "L" - музыка должна  плавно  затих-
+нуть. Нажмите на кнопку "K" - музыка заиг-
+рает с нормальной громкостью.  SPACE - вы-
+ход. Еще раз повторяю, что  исходники  де-
+монстрационные, и если вы будете использо-
+вать их в своих программах - уберите  лиш-
+нее и попробуйте оптимизировать их по дли-
+не, особенно подпрограмму, начинающуюся  с
+метки GLUSH и до конца, если вам, конечно,
+это удастся :-).
+   Напоследок хочу сказать,  что  PLAYGEAR
+COMPANY слепили часть к PROGRESS MEGADEMO,
+так что ждите демо от SERIOUS SPECCY  GRO-
+UP! А также хочу поздравить SPECCY с  пят-
+надцитилетием и пожелать ему  прожить  еще
+столько же..!
+
+
+
+
+;+------------------------------------------------------------+
+;| ИСХОДНИК ПРОЦЕДУРЫ ПЛАВНОГО ЗАТУХАНИЯ МУЗЫКИ.              |
+;| ТОЛЬКО ДЛЯ МУЗОНОВ КОМПЕЛИРОВАННЫХ В                       |
+;| SOUND TRACKER PRO BY KSA SOFTWARE.                         |
+;|                                                            |
+;| CODING BY CARDINAL/PGC/BD.     DATA: 11.01.1998г.          |
+;+------------------------------------------------------------+
+
+        ORG #6000
+        CALL MUZAK
+LOOP    EI
+        HALT
+        CALL MUZAK+6
+        LD A,#BF
+        IN A,(254)
+        RRCA
+        RRCA
+        PUSH AF
+        CALL NC,INST
+        POP AF
+        RRCA
+        CALL NC,UN_INST
+        LD A,#7F
+        IN A,(254)
+        RRCA
+        JP C,LOOP
+        CALL UN_INST
+        CALL MUZAK
+        RET
+
+MUZAK   EQU #C000               ;АДРЕС КОМПИЛЯЦИИ МУЗОНА
+SPEEDG  EQU 8                   ;СКОРОСТЬ ЗАТУХАНИЯ МУЗЫКИ.
+
+INST    LD DE,MUZAK+#FC         ;ИНИЦИАЛИЗАЦИЯ ЗАГЛУШКИ.
+        LD HL,GL1+1             ;
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,MUZAK+#05C8
+        LD DE,GLUSH
+        LD (HL),#CD
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,G1+1
+        LD (HL),0
+        INC HL
+        LD (HL),SPEEDG
+        RET
+
+UN_INST LD HL,MUZAK+#05C8       ;ОТМЕНЯЕМ ЗАГЛУШКУ.
+        LD (HL),#11
+        INC HL
+        LD (HL),#BF
+        INC HL
+        LD (HL),#FF
+        RET
+
+
+GLUSH   PUSH HL         ;ПРОЦЕДУРА ЗАГЛУШКИ, ЗАПУСКАЕТСЯ
+        LD HL,G1+2      ;ПРОИГРЫВАТЕЛЕМ.
+G1      LD BC,0
+        DJNZ G2
+        LD B,SPEEDG
+        INC C
+G2      LD (HL),B
+        DEC HL
+        LD (HL),C
+        LD A,#10
+        CP C
+        JR NC,G3
+        LD (HL),A
+        LD C,A
+G3      LD B,3
+GL1     LD HL,0
+G5      LD A,(HL)
+        AND 15
+G6      SUB C
+        JR NC,G4
+        XOR A
+G4      LD (HL),A
+        DEC HL
+        DJNZ G5
+        LD DE,#FFBF
+        POP HL
+        RET
+
+
+
+
+;+------------------------------------------------------------+
+;| ИСХОДНИК ПРОЦЕДУРЫ ПЛАВНОГО ЗАТУХАНИЯ МУЗЫКИ.              |
+;| ТОЛЬКО ДЛЯ МУЗОНОВ КОМПЕЛИРОВАННЫХ В                       |
+;| PROTRACKER v2.4 (С НАДПИСЬЮ for phantom family home-using) |
+;|                                                            |
+;| CODING BY CARDINAL/PGC/BD.     DATA: 11.01.1998г.          |
+;+------------------------------------------------------------+
+
+        ORG #6000
+        CALL MUZAK
+LOOP    EI
+        HALT
+        CALL MUZAK+5
+        LD A,#BF
+        IN A,(254)
+        RRCA
+        RRCA
+        PUSH AF
+        CALL NC,INST
+        POP AF
+        RRCA
+        CALL NC,UN_INST
+        LD A,#7F
+        IN A,(254)
+        RRCA
+        JP C,LOOP
+        CALL UN_INST
+        CALL MUZAK
+        RET
+
+MUZAK   EQU #C000               ;АДРЕС КОМПИЛЯЦИИ МУЗОНА
+SPEEDG  EQU 8                   ;СКОРОСТЬ ЗАТУХАНИЯ МУЗЫКИ.
+
+INST    LD DE,MUZAK+#0A13       ;ИНИЦИАЛИЗАЦИЯ ЗАГЛУШКИ.
+        LD HL,GL1+1
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,MUZAK+#02AA
+        LD DE,GLUSH
+        LD (HL),#CD
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,G1+1
+        LD (HL),0
+        INC HL
+        LD (HL),SPEEDG
+        RET
+
+UN_INST LD HL,MUZAK+#02AA       ;ОТМЕНЯЕМ ЗАГЛУШКУ.
+        LD (HL),#11
+        INC HL
+        LD (HL),#BF
+        INC HL
+        LD (HL),#FF
+        RET
+
+
+GLUSH   PUSH HL         ;ПРОЦЕДУРА ЗАГЛУШКИ, ЗАПУСКАЕТСЯ
+        LD HL,G1+2      ;ПРОИГРЫВАТЕЛЕМ.
+G1      LD BC,0
+        DJNZ G2
+        LD B,SPEEDG
+        INC C
+G2      LD (HL),B
+        DEC HL
+        LD (HL),C
+        LD A,#10
+        CP C
+        JR NC,G3
+        LD (HL),A
+        LD C,A
+G3      LD B,3
+GL1     LD HL,0
+G5      LD A,(HL)
+        AND 15
+G6      SUB C
+        JR NC,G4
+        XOR A
+G4      LD (HL),A
+        DEC HL
+        DJNZ G5
+        LD DE,#FFBF
+        POP HL
+        RET
+
+
+
+
+;+------------------------------------------------------------+
+;| ИСХОДНИК ПРОЦЕДУРЫ ПЛАВНОГО ЗАТУХАНИЯ МУЗЫКИ.              |
+;| ТОЛЬКО ДЛЯ МУЗОНОВ КОМПЕЛИРОВАННЫХ В                       |
+;| SOUND TRACKER SONG COMPILER v1.2.                          |
+;|                                                            |
+;| CODING BY CARDINAL/PGC/BD.     DATA: 11.01.1998г.          |
+;+------------------------------------------------------------+
+
+        ORG #6000
+        CALL MUZAK
+LOOP    EI
+        HALT
+        CALL MUZAK+6
+        LD A,#BF
+        IN A,(254)
+        RRCA
+        RRCA
+        PUSH AF
+        CALL NC,INST
+        POP AF
+        RRCA
+        CALL NC,UN_INST
+        LD A,#7F
+        IN A,(254)
+        RRCA
+        JP C,LOOP
+        CALL UN_INST
+        CALL MUZAK
+        RET
+
+MUZAK   EQU #C000               ;АДРЕС КОМПИЛЯЦИИ МУЗОНА
+SPEEDG  EQU 8                   ;СКОРОСТЬ ЗАТУХАНИЯ МУЗЫКИ.
+
+INST    LD DE,MUZAK+#AB         ;ИНИЦИАЛИЗАЦИЯ ЗАГЛУШКИ.
+        LD HL,GL1+1
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD DE,MUZAK+#AE
+        LD HL,GL2+1
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,MUZAK+#041F
+        LD DE,GLUSH
+        LD (HL),#CD
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,G1+1
+        LD (HL),0
+        INC HL
+        LD (HL),SPEEDG
+        RET
+
+UN_INST LD HL,MUZAK+#041F       ;ОТМЕНЯЕМ ЗАГЛУШКУ.
+        LD DE,GL2+1
+        LD (HL),#21
+        INC HL
+        LD A,(DE)
+        LD (HL),A
+        INC HL
+        INC DE
+        LD A,(DE)
+        LD (HL),A
+        RET
+
+
+GLUSH   LD HL,G1+2      ;ПРОЦЕДУРА ЗАГЛУШКИ, ЗАПУСКАЕТСЯ
+G1      LD BC,0         ;ПРОИГРЫВАТЕЛЕМ.
+        DJNZ G2
+        LD B,SPEEDG
+        INC C
+G2      LD (HL),B
+        DEC HL
+        LD (HL),C
+        LD A,#10
+        CP C
+        JR NC,G3
+        LD (HL),A
+        LD C,A
+G3      LD B,3
+GL1     LD HL,0
+G5      LD A,(HL)
+        AND 15
+G6      SUB C
+        JR NC,G4
+        XOR A
+G4      LD (HL),A
+        DEC HL
+        DJNZ G5
+GL2     LD HL,MUZAK+#AE
+        RET
+
+
+
+
+;+------------------------------------------------------------+
+;| ИСХОДНИК ПРОЦЕДУРЫ ПЛАВНОГО ЗАТУХАНИЯ МУЗЫКИ.              |
+;| ТОЛЬКО ДЛЯ МУЗОНОВ КОМПЕЛИРОВАННЫХ В                       |
+;| SOUND TRACKER MUSIC'S RECOMPILER v2.1 BY KSA SOFTWARE.     |
+;|                                                            |
+;| CODING BY CARDINAL/PGC/BD.     DATA: 11.01.1998г.          |
+;+------------------------------------------------------------+
+
+        ORG #6000
+        CALL MUZAK
+LOOP    EI
+        HALT
+        CALL MUZAK+6
+        LD A,#BF
+        IN A,(254)
+        RRCA
+        RRCA
+        PUSH AF
+        CALL NC,INST
+        POP AF
+        RRCA
+        CALL NC,UN_INST
+        LD A,#7F
+        IN A,(254)
+        RRCA
+        JP C,LOOP
+        CALL UN_INST
+        CALL MUZAK
+        RET
+
+MUZAK   EQU #C000               ;АДРЕС КОМПИЛЯЦИИ МУЗОНА
+SPEEDG  EQU 8                   ;СКОРОСТЬ ЗАТУХАНИЯ МУЗЫКИ.
+
+INST    LD DE,MUZAK+#0121       ;ИНИЦИАЛИЗАЦИЯ ЗАГЛУШКИ.
+        LD HL,GL1+1
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,MUZAK+#0568
+        LD DE,GLUSH
+        LD (HL),#CD
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,G1+1
+        LD (HL),0
+        INC HL
+        LD (HL),SPEEDG
+        RET
+
+UN_INST LD HL,MUZAK+#0568       ;ОТМЕНЯЕМ ЗАГЛУШКУ.
+        LD (HL),#11
+        INC HL
+        LD (HL),#FF
+        INC HL
+        LD (HL),#BF
+        RET
+
+
+GLUSH   PUSH HL         ;ПРОЦЕДУРА ЗАГЛУШКИ, ЗАПУСКАЕТСЯ
+        LD HL,G1+2      ;ПРОИГРЫВАТЕЛЕМ.
+G1      LD BC,0
+        DJNZ G2
+        LD B,SPEEDG
+        INC C
+G2      LD (HL),B
+        DEC HL
+        LD (HL),C
+        LD A,#10
+        CP C
+        JR NC,G3
+        LD (HL),A
+        LD C,A
+G3      LD B,3
+GL1     LD HL,0
+G5      LD A,(HL)
+        AND 15
+G6      SUB C
+        JR NC,G4
+        XOR A
+G4      LD (HL),A
+        INC HL
+        DJNZ G5
+        LD DE,#BFFF
+        POP HL
+        RET
+
+
+
+
+;+------------------------------------------------------------+
+;| ИСХОДНИК ПРОЦЕДУРЫ ПЛАВНОГО ЗАТУХАНИЯ МУЗЫКИ.              |
+;| ТОЛЬКО ДЛЯ МУЗОНОВ КОМПЕЛИРОВАННЫХ В                       |
+;| PRO TRACKER v2.1 BY GOLDEN DISK.                           |
+;|                                                            |
+;| CODING BY CARDINAL/PGC/BD.     DATA: 11.01.1998г.          |
+;+------------------------------------------------------------+
+
+        ORG #6000
+        CALL MUZAK
+LOOP    EI
+        HALT
+        CALL MUZAK+6
+        LD A,#BF
+        IN A,(254)
+        RRCA
+        RRCA
+        PUSH AF
+        CALL NC,INST
+        POP AF
+        RRCA
+        CALL NC,UN_INST
+        LD A,#7F
+        IN A,(254)
+        RRCA
+        JP C,LOOP
+        CALL UN_INST
+        CALL MUZAK
+        RET
+
+MUZAK   EQU #C000               ;АДРЕС КОМПИЛЯЦИИ МУЗОНА
+SPEEDG  EQU 8                   ;СКОРОСТЬ ЗАТУХАНИЯ МУЗЫКИ.
+
+INST    LD DE,MUZAK+#0255       ;ИНИЦИАЛИЗАЦИЯ ЗАГЛУШКИ.
+        LD HL,GL1+1
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,MUZAK+#0535
+        LD DE,GLUSH
+        LD (HL),#CD
+        INC HL
+        LD (HL),E
+        INC HL
+        LD (HL),D
+        LD HL,G1+1
+        LD (HL),0
+        INC HL
+        LD (HL),SPEEDG
+        RET
+
+UN_INST LD HL,MUZAK+#0535       ;ОТМЕНЯЕМ ЗАГЛУШКУ.
+        LD (HL),#11
+        INC HL
+        LD (HL),#BF
+        INC HL
+        LD (HL),#FF
+        RET
+
+
+GLUSH   PUSH HL         ;ПРОЦЕДУРА ЗАГЛУШКИ, ЗАПУСКАЕТСЯ
+        LD HL,G1+2      ;ПРОИГРЫВАТЕЛЕМ.
+G1      LD BC,0
+        DJNZ G2
+        LD B,SPEEDG
+        INC C
+G2      LD (HL),B
+        DEC HL
+        LD (HL),C
+        LD A,#10
+        CP C
+        JR NC,G3
+        LD (HL),A
+        LD C,A
+G3      LD B,3
+GL1     LD HL,0
+G5      LD A,(HL)
+        AND 15
+G6      SUB C
+        JR NC,G4
+        XOR A
+G4      LD (HL),A
+        DEC HL
+        DJNZ G5
+        LD DE,#FFBF
+        POP HL
+        RET

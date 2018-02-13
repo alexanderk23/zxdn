@@ -1,0 +1,1512 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf8">
+<link href=style.css type=text/css rel=StyleSheet>
+<title>ZXDN :: Coding/programming articles</title>
+</head>
+
+<body link=#0000AF vlink=#0000AF alink=#0000AF>
+
+<h1>Программирование</h1>
+<p><a href=index.html>< На главную</a></p>
+
+<a name=content><b>Список подразделов</b></a><br><br>
+<blockquote>
+<a href=#tobasic>Бейсик и его диалекты</a><br>
+<a href=#assembl>Ассемблер для начинающих</a><br>
+<a href=#codeopt>Оптимизация кода</a><br>
+<a href=#digisnd>Цифровой звук</a><br>
+<a href=#aysound>Музыка, AY</a><br>
+<a href=#graphic>Графика</a><br>
+&nbsp;<a href=#gfxchnk>::чанки</a><br>
+&nbsp;<a href=#gfxsprs>::спрайты</a><br>
+&nbsp;<a href=#gfxtext>::отображение текста</a><br>
+&nbsp;<a href=#gfxifce>::элементы интерфейса</a><br>
+&nbsp;<a href=#gfxconv>::конвертирование</a><br>
+&nbsp;<a href=#gfxdemo>::отдельные эффекты</a><br>
+&nbsp;<a href=#gfxmclr>::бордюр, мультиколоры</a><br>
+&nbsp;<a href=#gfxvide>::видео</a><br>
+<a href=#gamemak>Игростроение</a><br>
+<a href=#demomak>Демостроение</a><br>
+<a href=#emulati>Эмуляторы</a><br>
+<a href=#textpro>Работа с текстом</a><br>
+<a href=#totrdos>TR-DOS, ВГ93</a><br>
+<a href=#toisdos>iS-DOS</a><br>
+<a href=#disksys>Другие дисковые системы</a><br>
+<a href=#hacksec>Защита и взлом ПО</a><br>
+<a href=#compres>Сжатие данных</a><br>
+<a href=#formats>Форматы файлов</a><br>
+<a href=#calcula>Вычисления</a><br>
+<a href=#library>Описания библиотек</a><br>
+<a href=#drivers>Драйвера, модули</a><br>
+<a href=#miscdev>Работа с устройствами</a><br>
+&nbsp;<a href=#miscmod>::особенности моделей компьютеров</a><br>
+<a href=#memoryd>Работа с памятью</a><br>
+<a href=#usrifce>Пользовательский интерфейс</a><br>
+<a href=#miscinf>Разное</a><br>
+</blockquote><br>
+
+
+
+<a name=tobasic><b>Бейсик и его диалекты</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zf1basic.txt>Basic для  программистов</a></b> (ZX Format #1-4)<br>
+Цикл статей на различные темы, связанные с использованием стандартного Sinclair Basic. Также рассмотрены различные компиляторы Basic'а.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf57beta.txt>Beta Basic</a></b> (ZX Format #5-7)<br>
+Описание Beta Basic. Редактор, работа с TR-DOS, вывод на экран, процедуры и функции, условные операторы, циклы, особенности программирования.
+</blockquote>
+
+
+<a name=assembl><b>Ассемблер для начинающих</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zg14asmt.txt>Урок ассемблера для ламеров (1-4)</a></b> (ZX-Guide #1-4)<br>
+Цикл из четырёх статей, объясняющих основы программирования на ассемблере для ZX Spectrum. Дополнительно рассмотрены самые частые ошибки и опечатки в программах начинающих кодеров, полезные советы.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/op2041as.txt>Ассемблер: взгляд издалека</a></b> (Optron #20-41)<br>
+Цикл из 11 статей. От выбора ассемблера и основ программирования до описания аппаратного обеспечения ZX Spectrum и работы с экраном.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf1asmdm.txt>Ассемблер в картинках для &quot;чайников&quot; и не только</a></b> (ZX Format #1-2)<br>
+Основы программирования на ассемблере Z80. Регистры процессора, флаги, команды. Курс прерван по просьбам читателей.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3zxhrd.txt>Экскурс в анатомию ZX</a></b> (ZX Format #3)<br>
+Подборка ответов на наиболее часто возникающие у &quot;начавших&quot; вопросы. Количество тактов в прерывании, вывод графики без пересечения лучом, приблизительная оценка скорости выполнения процедуры с помощью изменения цвета бордюра.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf7asmbg.txt>О кодинге для начинающих</a></b> (ZX Format #7)<br>
+Кратко изложены основные сведения о процессоре Z80. Рассмотрены примеры различных процедур, основы оптимизации.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv2asmt.txt>Ответы на некоторые вопросы начинающих</a></b> (Adventurer #2)<br>
+Описание некоторых подпрограмм ПЗУ BASIC48, работа с каналами, использование калькулятора. Быстрое умножение и деление чисел на степени двойки, а также на другие значения (6, 40).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv4bgnq.txt>Ответы на некоторые вопросы начинающих</a></b> (Adventurer #4)<br>
+Опрос клавиатуры подпрограммами ПЗУ, отличия ПЗУ BASIC128 от BASIC48, организация памяти ZX Spectrum 128.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv5romp.txt>Использование подпрограмм ПЗУ и несколько процедур</a></b> (Adventurer #5)<br>
+Краткое описание нескольких подпрограмм ПЗУ BASIC48, процедуры перевода строки в число (десятичный и шестнадцатеричный форматы) и другие.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv5chan.txt>Знаете ли вы, что такое RST 16(#10) ?</a></b> (Adventurer #5)<br>
+Использование каналов в программах.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0alspr.txt>О печати сообщений в нижних строках экрана</a></b> (Deja Vu #0A)<br>
+Печать сообщений в нижних строках экрана с помощью переключения канала ввода-вывода и процедур ПЗУ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09keyb.txt>Подробно об одном из способов опроса клавиатуры</a></b> (Deja Vu #09)<br>
+Процедура опроса клавиатуры без использования подпрограмм ПЗУ. С подробными комментариями.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09trdr.txt>Сброс с переходом в TR-DOS</a></b> (Deja Vu #09)<br>
+Процедура сброса с переходом в TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/kn10beam.txt>Ну почему он так режет?</a></b> (Krasnodar News #10)<br>
+Вывод упакованных полноэкранных изображений на экран через промежуточный буфер. Синхронное изменение цвета экрана и бордюра.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3adapt.txt>Адаптация программ на диск для начинающих</a></b> (ZX Format #3)<br>
+Основы адаптации кассетных версий программ для TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3dexor.txt>Как бороться с закрытыми кодами</a></b> (ZX Format #3)<br>
+Дополнение к статье об основах адаптации программ для TR-DOS - обход простейших защит на основе операции XOR в загрузчиках.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/iz04lgop.txt>Xor And Or ???</a></b> (IzhNews #4)<br>
+Логические операторы и их примeнение, сравнение и кратная математика.
+</blockquote>
+
+
+
+<a name=codeopt><b>Оптимизация кода</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bd0abopt.txt>Как кодить оптимально</a></b> (Born Dead #0A)<br>
+О методах оптимизации кода по размеру, на примере оптимизаций, выполнявшихся для 512b intro 'Absent' (CC'99)<br>
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg4optim.txt>Оптимизация по скорости</a></b> (ZX-Guide #4)<br>
+Несколько примеров оптимизации по скорости таких эффектов, как Rotation/ZoomRotation, BumpMapping.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7optim.txt>Основы оптимизации под Z80</a></b> (Info Guide #7)<br>
+Виды оптимизации, способы оптимизации по скорости, объёму кода, объёму сжатого кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10grcd.txt>Код Грея и оптимизация программ</a></b> (Info Guide #10)<br>
+Описание кода Грея и его применение для оптимизации программ.
+</blockquote>
+
+
+
+<a name=digisnd><b>Цифровой звук</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bd0gdpcm.txt>Сжатие звука методом ADPCM</a></b> (Born Dead #0G)<br>
+Описание алгоритма сжатия цифрового звука с потерями, на примере сжатия 4:1 (один 8 бит в 2 бита).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bd09gmcc.txt>Воспроизведение оцифровок на AY методом MCC</a></b> (Born Dead #09, #0G)<br>
+Продолжение темы, начатой в Born Dead #05 - улучшенные варианты плееров, использующие метод Middle-Channel Correction (повышение разрядности ЦАП с помощью использования всех трёх каналов AY).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig6dacrs.txt>Как получить на звуковом устройстве больше бит?</a></b> (Info Guide #6)<br>
+Способы повышения разрядности ЦАП с помощью широтно-импульсной модуляции. Применимо для воспроизведения оцифровок через Beeper, Covox.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg45dsnd.txt>Цифровые плееры</a></b> (ZX-Guide #4.5)<br>
+Обзор проблем, возникающих при создании плееров цифрового звука, возможные варианты их решения.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10zvuk.txt>О звуке (в особенности на бипере)</a></b> (Info Guide #10)<br>
+Большая статья, посвящённая вопросам оцифровки и воспроизведения звука с помощью магнитофонного входа и бипера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ms12dsnd.txt>Цифровой звук</a></b> (MSD #12)<br>
+Проигрывание одного и нескольких сэмплов на AY, примитивный ресемплинг (изменение высоты звука).
+</blockquote>
+
+
+
+<a name=aysound><b>Музыка, AY</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zg45mfmt.txt>Автоопределение музыкальных форматов</a></b> (ZX-Guide #4.5)<br>
+Программное определение формата музыкальных модулей (по плееру, по данным модуля).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg45ayeq.txt>Индикатор AY</a></b> (ZX-Guide #4.5)<br>
+Вариант индикатора частотного анализатора AY-музыки (процедура и краткие пояснения).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/flt1ayfq.txt>Таблица делителей для нот</a></b> (Flash Time #1)<br>
+Таблица делителей для получения точной частоты нот, формула расчёта.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng1msnc.txt>Синхронизация с музыкой в демах</a></b> (Scenergy #1)<br>
+Подробное описание способов реализации синхронизации каких-либо действий (например, эффектов в trackmo) с музыкой.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10beep.txt>Бипер</a></b> (Info Guide #10)<br>
+Обзор способов воспроизведения музыки с помощью бипера. Обзор музыкальных редакторов, ориентированных на использование бипера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv04fade.txt>Плавное уменьшение громкости музыки</a></b> (Deja Vu #04)<br>
+Описание способа плавного уменьшения громкости AY-музыки, пять примеров процедур для разных плееров.
+</blockquote>
+
+
+
+<a name=graphic><b>Графика</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zg1scfrm.txt>К вопросу о выводе экрана за прерывание</a></b> (ZX-Guide #1)<br>
+Способ вывода экрана за одно прерывание (LD-PUSH), реализация вертикального скроллинга.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg4fmapp.txt>Mapping</a></b> (ZX-Guide #4)<br>
+Быстрый вывод фрагмента большого изображения в окне меньшего размера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/3b1scrll.txt>Опять Scroll...</a></b> (3bit #1)<br>
+Процедура сдвига экрана вверх/вниз, сдвигает графику и атрибуты.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg1etud1.txt>Оптимальный DOWN HL</a></b> (ZX-Guide #1)<br>
+Процедура вычисления адреса следующей строки пикселей в экране (стандартный, не самый оптимальный вариант).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/n125dnhl.txt>Процедуры расчета следующей и предыдущей линии экрана. Оптимизация.</a></b> (Nicron #125)<br>
+Наиболее оптимальные варианты процедур DOWN HL/UP HL, известные на текущий момент.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg1etud2.txt>Точка Старых</a></b> (ZX-Guide #1)<br>
+Процедура установки (либо получения состояния) точки в произвольном месте экрана за 58 тактов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m08drlne.txt>Алгоритм рисования линии</a></b> (Move #08)<br>
+Процедура рисования линии на основе алгоритма Брезенхема.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig9vslon.txt>О летающем слоне</a></b> (Info Guide #9)<br>
+Алгоритм отображения воксельных объектов на примере эффекта в интро к Info Guide #5.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod1filt.txt>Локальная фильтpация pастpовых изобpажений</a></b> (Demo Or Die #1)<br>
+Описание алгоритмов фильтрации изображения для получения эффектов размытия, увеличения резкости, огня и других. Фрагменты кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod1hdfc.txt>Алгоpитмы обpаботки видимости повеpхностей 3D-фигуp</a></b> (Demo Or Die #1)<br>
+Описание трёх способов отсечения невидимых граней при отображении 3D-моделей.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod13d2d.txt>Проецирование 3D&gt;2D</a></b> (Demo Or Die #1)<br>
+Описание трёх способов проецирования трёхмерных координат на плоскость - диметрическая, изометрическая и перспективная проекции.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod1pgns.htm>Заливка треугольника, Гуpо shading, наложение текстуры</a></b> (Demo Or Die #1)<br>
+Алгоритм закрашивания треугольника одним цветом и с линейной интерполяцией цвета, для освещения по Гуро.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2phng.htm>Phong shading</a></b> (Demo Or Die #2)<br>
+Расчёт освещения граней 3D-модели методом fake phong. Примеры кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2flat.txt>Flat shading</a></b> (Demo Or Die #2)<br>
+Расчёт освещения граней 3D-модели методом Ламберта. Примеры кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2rdbl.txt>Radial blur</a></b> (Demo Or Die #2)<br>
+Описание алгоритма эффекта размытия изображения по кругу (фильтрации с увеличением).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2mvsh.txt>Moving Shit</a></b> (Demo Or Die #2)<br>
+Эффект искажения изображения по таблице синусов. Описание алгоритма и пример кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dpt1fgfx.txt>Совершенные методы кодинга и современные способы работы с графикой</a></b> (Depth #1)<br>
+Описание способов вывода полноэкранного изображения и вертикального скроллинга экрана за одно прерывание и способов решения проблемы 'разрыва' изображения. Примеры кода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv7fsln.htm>Быстрые процедуры линии</a></b> (Adventurer #7)<br>
+Две процедуры рисования произвольной линии, работающие быстрее, чем стандартная, встроенная в ПЗУ BASIC.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng1bump.htm>Реализация Phong Bump Mapping на Speccy</a></b> (Scenergy #1)<br>
+Подробное описание алгоритма работы и реализации эффекта.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng2txmp.htm>Texture mapping</a></b> (Scenergy #2)<br>
+Алгоритм вывода текстурированного полигона (афинное текстурирование).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng2txph.txt>Texture mapping + Phong shading</a></b> (Scenergy #2)<br>
+Алгоритм вывода текстурированного полигона (афинное текстурирование) с освещением по Фонгу.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv06ball.htm>Генерилка шариков</a></b> (Deja Vu #06)<br>
+Процедура генерации кадров вращающегося шарика с &quot;шахматной&quot; текстурой.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv06frac.htm>Фрактальный папоротник</a></b> (Deja Vu #06)<br>
+Процедура построения фрактального папортника.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec01gf3d.txt>Изображение трёхмерных объектов</a></b> (Echo #01)<br>
+Основы трёхмерной графики - общая информация. Дополнительно - вывод точки за 70 тактов, процедура умножения.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zpw3gf3d.txt>Быстрая 3D-графика для Speccy</a></b> (ZX Power #3-4)<br>
+Ускорение расчётов для трёхмерной графики на ZX Spectrum. Описание метода, примеры процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf6clbmc.txt>BMC - Show 'em up in colour (BMC = Bitmap Multicolor)</a></b> (ZX Format #6)<br>
+Описание идеи программного видеорежима 3Color (триколор). Методы конвертирования изображений.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf7trclr.txt>Расширение цветовых возможностей ZX</a></b> (ZX Format #7)<br>
+Ещё одно описание видеорежима 3Color. Формат Y для хранения изображений; описание вьюера от Virt Group; способ конвертирования изображений.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/asp4gfxb.txt>Быстрая и не очень быстрая графика</a></b> (ASpect #4)<br>
+Организация и работа с теневым экраном. Примеры процедур.
+</blockquote>
+
+
+
+<a name=gfxchnk><b>Графика :: чанки</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bd05fc2p.txt>Fast C2P procedure</a></b> (Born Dead #05)<br>
+Описание способа быстрого вывода чанков 4x6 пикселей.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2chnk.txt>Chunks Output</a></b> (Demo or Die #2)<br>
+Генерация и вывод чанков 4x4 пикселя.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ps11ch22.txt>Dithering 2*2=16</a></b> (Psychoz #11)<br>
+Метод вывода чанков 2x2 пикселя с использованием дитеринга.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ad14c2pi.txt>Chunks 2x2</a></b> (Adventurer #14)<br>
+Метод вывода чанков 2x2 пикселя с использованием дитеринга и линейной интерполяции при выводе.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg4ch4g.txt>Генерация чанков 4x4</a></b> (ZX-Guide #4)<br>
+Процедура генерации чанков 4x4 (17 градаций) с дублированием в байте, длиной 46 байт.
+</blockquote>
+
+
+
+<a name=gfxsprs><b>Графика :: спрайты</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zg45spro.txt>Быстрый вывод спрайтов</a></b> (ZX-Guide #4.5)<br>
+Способы вывода спрайтов для игр в жанре RTS и подобных (с точностью до пиксела, без хранения сдвинутых копий). Вариант решения проблемы совмещения вывода через стек и отрисовки стрелки на прерываниях.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/n105sprd.txt>Вспомогательные операции при выводе спрайта в область экранной памяти</a></b> (Nicron #105)<br>
+Шесть способов расчёта адреса следующей строки экрана.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv7spgn.txt>Поиск адреса спрайта в архиве от Sprites Generator</a></b> (Adventurer #7)<br>
+Процедура расчёта адреса спрайта в блоке данных, создаваемом программой Sprites Generator.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09dspr.txt>Вывод спрайтов 2x2 знакоместа</a></b> (Deja Vu #09)<br>
+Процедура быстрого вывода спрайтов с фиксированным положением, размером 2x2 знакоместа.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv05sint.txt>Использование стека при разрешённых прерываниях</a></b> (Deja Vu #05)<br>
+Совмещение вывода графики с помощью стека и разрешённых прерываний.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0asspr.txt>Использование стека при разрешённых прерываниях</a></b> (Deja Vu #0A)<br>
+Cпособ совмещения разрешённых прерываний и вывода графики с помощью стека.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv05dspr.txt>Вывод спрайтов</a></b> (Deja Vu #05)<br>
+Процедуры вывода спрайтов, процедура поворота спрайта на произвольный угол.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zpw3mask.txt>Автоматическое создание маски для спрайтов</a></b> (ZX Power #3)<br>
+Описание трёх способов автоматического создания маски для спрайтов. Пример процедуры для наиболее эффективного из них.
+</blockquote>
+
+
+
+<a name=gfxtext><b>Графика :: отображение текста</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc06tout.htm>Секреты текстового вывода</a></b> (Black Crow #06)<br>
+О приёмах оптимизации вывода символьной информации. Уменьшение объёма памяти, требуемой для хранения шрифта, получение шрифта 6x8 из стандартного, ускорение расчёта адреса символа за счёт изменения формата хранения.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/3b1prsym.txt>Всё о печати символов...</a></b> (3bit #1)<br>
+Вывод текста символами 8x8, 4x8, 6x8, в цвете и без. Примеры процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg1etud4.txt>Быстрая печать буквы 6x8</a></b> (ZX-Guide #1)<br>
+Процедура вывода символа 6x8 пикселей, а также быстрое вычисление адреса символа в ПЗУ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/lp12pr42.txt>Быстрый и компактный драйвер печати 42 символов в строке</a></b> (LPrint #12)<br>
+Процедура вывода символов 6x8, в цвете и без него, с очисткой или наложением. Дополнительно - процедура конвертации шрифтов ZX-ASM.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/fu1print.txt>Быстрая печать 42, 64 символа в строке</a></b> (Funeral #1)<br>
+Две продедуры вывода символов, 6x8 и 4x8 соответственно.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv04nump.txt>Печать чисел в разных системах счисления</a></b> (Deja Vu #04)<br>
+Процедуры вывода десятичных, шестнадцатеричных, двоичных чисел. Печать чисел в системе счисления с ос-
+нованием, установленным пользователем. Печать римских чисел.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09pr42.txt>Быстрая печать 42-х символов в строке</a></b> (Deja Vu #09)<br>
+Процедура вывода символов 6x8, в цвете. Также процедуры скролла экрана и вывода спрайта.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09pr64.txt>Быстрый вывод строки с 64 символами</a></b> (Deja Vu #09)<br>
+Процедура вывода символов 4x8. Печатаются одновременно два символа.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv07prnt.txt>Процедура печати для использования из Бейсика</a></b> (Deja Vu #07)<br>
+Процедура печати сообщений, предназначенная для использования в Бейсик-программах. Принимает входные данные из REM-строк.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/asp8pr64.txt>Чтобы строка вмещала больше</a></b> (ASpect #8)<br>
+Процедура вывода символов 4x8.
+</blockquote>
+
+
+
+<a name=gfxifce><b>Графика :: элементы интерфейса</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/adv8wndw.txt>Рисование окна с рамкой</a></b> (Adventurer #8)<br>
+Короткая процедура рисования окна с рамкой от Ивана Рощина.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/3b1drwin.txt>Рисование окна с рамкой в цвете</a></b> (3bit #1)<br>
+Известная процедура рисования окна с рамкой от Ивана Рощина, модифицированная Cooper/RSM/P7S.
+</blockquote>
+
+
+
+<a name=gfxconv><b>Графика :: конвертирование</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ad13fsbg.txt>Floyd-Steinberg</a></b> (Adventurer #13)<br>
+Описание одноимённого алгоритма дитеринга (применяется для улучшения качества преобразования изображений из большего количества цветов в меньшее).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv07dith.htm>Dithering, как он есть (и как его нет)</a></b> (Deja Vu #07)<br>
+Описание алгоритма упорядоченного дитеринга, генерация текстур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0adit2.htm>Dithering #02</a></b> (Deja Vu #0A)<br>
+Продолжение предыдущей статьи. Вывод &quot;цветных&quot; точек и линий; градиентная заливка; 256-&quot;цветная&quot; графика; конверсия 256-цветных изображений в 2 и 4 цвета; примеры использования.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7cvimg.htm>Принципы конвертирования графики PC->ZX</a></b> (Info Guide #7, #8)<br>
+Способы конвертации цветной графики для ZX (обычные 6912 и двухэкранные картинки).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv08ascr.htm>Конвеpсия гpафики в текст фоpмата ASCII</a></b> (Deja Vu #08)<br>
+Процедура конверсии графических изображений в псевдографику. Использует блоки с разной штриховкой.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0ascta.txt>К вопросу о конверсии</a></b> (Deja Vu #0A)<br>
+Процедура конверсии графических изображений в текст. Использует все символы шрифта.
+</blockquote>
+
+
+
+<a name=gfxdemo><b>Графика :: отдельные эффекты</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/adv9rotm.htm>Вращалка-извращалка</a></b> (Adventurer #9)<br>
+Рассматривается эффект, аналогичный использованному в демо Vibrations (Rush'96) - 'атрибутная вращалка-искажалка-приближалка-удалялка-смещалка'.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/vw1water.txt>Круги на воде</a></b> (Virtual Worlds #1)<br>
+Описание алгоритма эффекта кругов на воде.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2plsm.htm>Реализация плазмы размером 2x2</a></b> (Demo Or Die #2)<br>
+Описание алгоритма и исходный код эффекта плазмы, выводимой чанками 2x2, из BooM trackmo.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv8iris.txt>Графический эффект 'Iris'</a></b> (Adventurer #8)<br>
+Исходник графического эффекта, аналогичного эффекту в скринсейвере Iris программы DOS Navigator на PC.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv8atsc.txt>Эффект плавного псевдо-атрибутного скролла</a></b> (Adventurer #8)<br>
+Исходник графического эффекта, выполняющего скролл атрибутной надписи с дискретностью в один пиксель.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv03fatr.txt>Плавающие атрибуты</a></b> (Deja Vu #03)<br>
+Процедура графического эффекта атрибутной надписи, перемещающейся с точностью до пикселя.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv04pbls.txt>Плазменные шарики</a></b> (Deja Vu #04)<br>
+Описание эффекта, аналогичного реализованному в демо Vibrations.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/iz09fire.txt>Эффект горящего огня</a></b> (IzhNews #9)<br>
+Описание алгоритма и пример процедуры.
+</blockquote>
+
+
+
+<a name=gfxmclr><b>Графика :: бордюр, мультиколоры</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zf5bordr.txt>Об эффектах на бордюре и кое о чём ещё</a></b> (ZX Format #5)<br>
+Основы создания бордюрных эффектов. Примеры процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf6mlclr.txt>Изготовление мультиколоров</a></b> (ZX Format #6)<br>
+Основы эффекта 'мультиколор'. Пример процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m02mcbrd.txt>Мультиколор и бордюрные эффекты</a></b> (Move #02)<br>
+Основные принципы создания бордюрных эффектов и мультиколора.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc05bord.txt>Мультиколор и чанки на бордюре</a></b> (Black Crow #05)<br>
+Увеличение количества видимых цветов в бордюрных эффектах за счёт их черезкадрового чередования (аналогично двухэкранной графике), исходник примера эффекта.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg2mchow.txt>О мультиколоре вообще и MC24 в частности</a></b> (ZX-Guide #2)<br>
+Описание идеи эффекта 'мультиколор', возможные вариации эффекта и способы реализации.
+</blockquote>
+
+
+
+<a name=gfxvide><b>Графика :: видео</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ad15mcol.txt>Больше цвета!</a></b> (Adventurer #15)<br>
+Описание способа упаковки и вывода цветной анимации, использованной в демо WeeD (Triebkraft'2003).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7video.txt>Об упаковке видео для ZX</a></b> (Info Guide #7)<br>
+Эффективный метод сжатия видео, использующий межкадровое сжатие по знакоместам (с учётом степени изменений и 'стандартных знакомест'). Описание способа конверсии видео с PC.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig8cdvid.txt>CD video на ZX</a></b> (Info Guide #8)<br>
+Воспроизведение видео с цифровым звуком с CD (без упаковки) - общие принципы.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod1atvd.htm>Конвертирование анимации на примере атрибутного видео</a></b> (Demo Or Die #1)<br>
+Описание методов создания, упаковки и проигрывания атрибутного видео, с разрешением 32x24 и 53 цветами на условную точку.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng2jamv.htm>Упаковка анимаций в JAM</a></b> (Scenergy #2)<br>
+Описание алгоритма упаковки силуэтных анимаций в демо JAM.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zxvdonzx.txt>Видео на спектруме. Реально?</a></b><br>
+Обзорная статья о методах реализации видео на ZX Spectrum. Вывод, хранение, сжатие.
+</blockquote>
+
+
+
+<a name=gamemak><b>Игростроение</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ad11game.htm>Game making #2</a></b> (Adventurer #11)<br>
+Статья от автора демо-версии игры Full Shit. Описываются методы выводы графики, структура игрового цикла упомянутой игры и некоторые другие вещи. С примерами процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ad13doom.htm>Как написать 3D игру типа DOOM</a></b> (Adventurer #13)<br>
+Описывается метод 3d-визуализации, использованный в демо Love Gun (3d-движок с секторной организацией пространства).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7gpr3d.txt>3D проецирование пола/трассы</a></b> (Info Guide #7)<br>
+Метод перспективного проецирования плоской карты, который возможно применить для гоночной игры (эффект, аналогичный так называемому MODE7 на приставке Super Nintendo). Пример процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig8p16cg.txt>Написание аркадной игры</a></b> (Info Guide #8)<br>
+О процессе написания игры Pang16c под режим 16col (цвет на точку, для Pentagon/ATM2Turbo).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dn21gmai.htm>Теория AI</a></b> (Don News #21)<br>
+Некоторые идеи для 'интеллекта' врагов в играх, подобных Battle City. Выбор направления движения, маркеры пути, волновой алгоритм.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig5ray3d.htm>Raycasting - сделай себе немного DOOM'a</a></b> (Inferno Guide #5)<br>
+Описание алгоритма рейкастинга, использующегося в Wolfenstein3d-подобных играх (несколько изменённый алгоритм реализован в Wolfenstein'2004 на ZX Spectrum).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/vw1pfind.txt>Поиск пути</a></b> (Virtual Worlds #1)<br>
+Описание поиска пути методом волнового алгоритма с некоторыми модификациями.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf5cgmai.txt>Искусственный интеллект в компьютерных играх</a></b> (ZX Format #5-6)<br>
+Алгоритмы ИИ в компьютерных играх разных жанров. Общие идеи, примеры программ на Бейсике.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf6wvalg.txt>Построение крaтчaйшего мaршрутa</a></b> (ZX Format #6)<br>
+Поиск пути стандартным вариантом волнового алгоритма. Возможные модификации.
+</blockquote>
+
+
+
+<a name=demomak><b>Демостроение</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/sng2dngl.txt>Секреты DAINGY</a></b> (Scenergy #2)<br>
+Описание алгоритмов и их реализаций, применённых в интро Daingly. Фрагменты кода с пояснениями.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/kn10i256.txt>Intro в 256 байт?</a></b> (Krasnodar News #10)<br>
+Исходный код эффекта, использованного в качестве screensaver'а в газете Krasnodar News.
+</blockquote>
+
+
+
+<a name=emulati><b>Эмуляторы</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bd05emud.txt>Emulators must die!</a></b> (Born Dead #05)<br>
+В статье рассматриваются методы определения выполнения программы на эмуляторе. Идея заключается в определении ошибок эмуляции в существовавших на момент написания статьи эмуляторах (07.01.1999).
+</blockquote>
+
+
+
+<a name=textpro><b>Работа с текстом</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc02txts.txt>Быстрый поиск слова в тексте</a></b> (Black Crow #02)<br>
+Обзор проблемы быстрого поиска слова в тексте и один из возможных вариантов её решения.
+</blockquote>
+
+
+
+<a name=totrdos><b>TR-DOS, ВГ93</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc05strd.txt>Справочник по TR-DOS</a></b> (Black Crow #05)<br>
+Справочник по системным переменным и функциям TR-DOS, для версии 5.04T.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc02trda.txt>Метод загрузки уровней при адаптации игр к TR-DOS</a></b> (Black Crow #02)<br>
+Рассматриваются основные принципы полной адаптации игр (с дозагрузками/отгрузками) под дисковую систему TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv07dver.txt>Основы создания дисковых версий</a></b> (Deja Vu #07)<br>
+Описание основ адаптации кассетных версий программ для системы TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv6dver.txt>Как сделать дисковую версию</a></b> (Adventurer #6)<br>
+Методы полной адаптации кассетных версий программ для системы TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc07pbar.txt>Индикация работы с диском</a></b> (Black Crow #07)<br>
+Пример реализации прогресс-бара загрузки. Написан под оболочку 'Windows98' из журнала Black Crow #02.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/an2tclpm.txt>О командных строках</a></b> (AlCoNews #2)<br>
+Описание способа передачи параметров в программу через командную строку TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg1trdos.txt>TR-DOS Level 1: 15635
+</a></b> (ZX-Guide #1)<br>
+Описание функций TR-DOS, доступных через вызов по #3D13.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg2trdos.txt>TR-DOS Level 2: КР1818ВГ93</a></b> (ZX-Guide #2)<br>
+Прямое программирование контроллера дисковода.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg3trdos.txt>TR-DOS: Level 3</a></b> (ZX-Guide #3)<br>
+#3D13 с обработкой ошибок, передача параметров через командную строку TR-DOS, функции для boot, проверка наличия диска в дисководе.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7d3d13.txt>Программирование смены диска/дисковода</a></b> (Info Guide #7)<br>
+Проблема при выполнении операции выбора диска на ZS Scorpion с жёстким диском и способ её решения.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/3b1trder.txt>Обработка дисковых ошибок TR-DOS</a></b> (3bit #1)<br>
+Процедура блокировки сообщений об ошибках TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv7trer.txt>Обработка дисковых ошибок TR-DOS</a></b> (Adventurer #7)<br>
+Код процедуры для обработки дисковых ошибок TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv093d13.txt>Обработка ошибок TR-DOS при работе через #3D13</a></b> (Deja Vu #09)<br>
+Примеры процедур обработки ошибок дисковых операций при работе с TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m08stdtr.txt>Строение стандартной дорожки</a></b> (Move #08)<br>
+Описание строения стандартной дорожки TR-DOS дискеты.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/vw1trdos.txt>Секреты TR-DOS</a></b> (Virtual Worlds #1)<br>
+Определение наличия или отсутствия дисководов. Пример процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0agdsk.txt>Определение наличия диска в дисководе</a></b> (Deja Vu #0A)<br>
+Процедура определения наличия диска в дисководе.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv01im2t.txt>Режим IM2 при работе TR-DOS</a></b> (Deja Vu #01)<br>
+Загрузка данных в TR-DOS одновременно с выполнением программы на прерываниях. Пример процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv46dsl.txt>Дисковые загрузчики</a></b> (Adventurer #4, #6)<br>
+Описание и код процедуры загрузки с диска с разрешёнными прерываниями, использованной в журнале Eldorado #2; улучшенный вариант этой процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv05runb.txt>Загрузка и запуск бейсик-файлов</a></b> (Deja Vu #05)<br>
+Процедура загрузки и запуска Basic-файлов без выхода в Basic. Использует фрагменты подпрограмм ПЗУ TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv06ffmt.txt>Сверхбыстрое форматирование дисков</a></b> (Deja Vu #06)<br>
+Процедура для форматирования дискет с высокой скоростью (32 секунды).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv06rwdr.txt>Драйвер чтения/записи</a></b> (Deja Vu #06)<br>
+Процедура драйвера чтения/записи без использования #3D13.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf56trds.txt>TR-DOS для программистов</a></b> (ZX Format #5-6)<br>
+Описание некоторых тонкостей и сложностей. Непосредственная работа с ВГ93. Примеры процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3trerr.txt>Исправление ошибки TR-DOS</a></b> (ZX Format #3)<br>
+Ошибка при позиционировании головки в ПЗУ TR-DOS и её исправление.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/trdosdrv.txt>Независимый драйвер для чтения и записи файлов в системе TR-DOS</a></b><br>
+Процедура драйвера для независимого чтения и записи файлов в TR-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ms09trda.txt>Оптимизация программ или пишем загрузчик в кодах</a></b> (MSD #9)<br>
+Создание моноблочного загрузчика.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/trdirsys.txt>Directory System for TR-DOS</a></b><br>
+Описание системы каталогов для TR-DOS, поддерживаемой программой TR-DOS Navigator. 
+</blockquote>
+
+
+
+<a name=toisdos><b>iS-DOS</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/zf56ispr.txt>Краткий курс программирования в среде iS-DOS</a></b> (ZX Format #5-6)<br>
+Первоначальные сведения для программирования в среде iS-DOS. Распределение памяти, пример простейшей программы, резидентные программы, драйверы устройств.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf1isucl.txt>UniColor - cтандарт настройки цветов в программах iS-DOS</a></b> (ZX Format #1)<br>
+Описание стандарта UniColor, применяемого для настройки цветовой схемы программ при помощи универсальной утилиты unicolor.com.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf1isgme.txt>Программа gmen.com и системный рестарт menu (#91)</a></b> (ZX Format #1)<br>
+Описание внутреннего устройства программы gmen.com в виде исходного кода с подробными комментариями.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf1iswnd.txt>Оконная система iS-DOS</a></b> (ZX Format #1)<br>
+Описание рестартов уровня WIND.SYS, относящихся к работе с окнами и текстовой информацией в них.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf2ismon.txt>Монитор командной строки iS-DOS и рестарт строкового редактора #6E smbgt</a></b> (ZX Format #2)<br>
+Использование рестарта строкового редактора #6E smbgt на примере утилиты mon.com.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3isobj.txt>Формат объектных модулей *.obj iS-DOS Ассемблера</a></b> (ZX Format #3)<br>
+Описание формата объектных модулей, принятого в системе IS-DOS и поддерживаемого IS-DOS Ассемблером и компоновщиком объектных модулей link.com.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3isasm.txt>Формат таблицы локальных символов iS-DOS Ассемблера</a></b> (ZX Format #3)<br>
+Описание формата таблицы локальных символов, генерируемой IS-DOS Ассемблером в виде временного файла *.ltb.
+</blockquote>
+
+
+
+<a name=disksys><b>Другие дисковые системы</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ad13mdos.txt>Работа с MDOS, MB02</a></b> (Adventurer #13)<br>
+Описание дисковых систем MDOS, MB02. Формат дисков, функции системы, программирование.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7doses.txt>Форматы дисков</a></b> (Info Guide #7)<br>
+Большой справочник (~100кб) по форматам дисков таких систем и программ, как: MS-DOS, ASC SOUND MASTER, Profi DOS, iS-DOS, CP/M (MICRODOS), Realtime Audio Player, DOS ПК "Агат", DOS 2.6 (Радио-86РК), SP-DOS (Орион-128), MX-DOS (Специалист-MX), RT-11 (Рафос, Фодос), АО-ДОС 2.02, NEWDOS, AN-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig8discp.txt>Техническое руководство по DISCiPLE/+D</a></b> (Info Guide #8)<br>
+Перевод документации на систему DISCiPLE/+D.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10mofs.txt>Структура разметки винчестера на компьютере Scorpion</a></b> (Info Guide #10)<br>
+Описание структуры разметки жёсткого диска на компьютере Scorpion, так называемая MOA filesystem.
+</blockquote>
+
+
+
+<a name=hacksec><b>Защита и взлом ПО</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc02hcmk.txt>Описание защиты игры Mortal Kombat</a></b> (Black Crow #02)<br>
+Текст описывает защиту на диске с игрой Mortal Kombat (от MAFIA corp) и способ её взлома.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc02povw.txt>Общий обзор защит</a></b> (Black Crow #02)<br>
+Краткое описание методов защиты, применённых в игре Black Raven. Объясняется способ защиты с использованием специально нанесённых царапин на диске.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc02prem.txt>Снятие защит</a></b> (Black Crow #02)<br>
+Краткое описание способов взлома некоторых защит. На примере Imp Protection System 1995, Vasilyev Anton Protection System 1992, KSA Encryption Device 1995, Microprotector 1995.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc06pcpt.txt>Защита от копирования</a></b> (Black Crow #06)<br>
+Описание метода защиты дискет от копирования. Данный метод использовался в игре 'Чёрный Ворон: Новые Миссии'.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m0235xor.txt>XOR'em all</a></b> (Move #02,#03,#05)<br>
+Методы шифрования данных, общие сведения и разбор таких защит, как Imp Protection System 1995, Golden Eagle Protection System. DeadLock.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv3ptct.txt>Мeтоды зaщиты информaции нa ZX Spectrum</a></b> (Adventurer #3)<br>
+Обзор способов защиты дискет от копирования. Общая информация.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv6ptct.txt>Методы защиты программного кода</a></b> (Adventurer #6)<br>
+Краткий обзор основных способов защиты кода от модификации. Общая информация.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv08prot.txt>Как создать некопируемый сектор</a></b> (Deja Vu #08)<br>
+Способ защиты программ от копирования с помощью создания некопируемых секторов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09ivir.txt>Вирус-невидимка</a></b> (Deja Vu #09)<br>
+Описание идеи вируса, заражающего CODE-файлы в TR-DOS и хранящегося в неиспользуемых байтах последних секторов файлов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zpw2rest.txt>Восстановление программ</a></b> (ZX Power #2)<br>
+Восстановление испорченных или неработоспособных версий программ. Исправление ошибок, внесённых при адаптации к дисковым системам или снятии защиты.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zpw3poke.txt>Cheat и Pokes в игровых программах</a></b> (ZX Power #3)<br>
+Основные сведения о реализации Cheat-режимов в игровых программах.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf3cheat.txt>Пособие для мелкого пакостника или как стать бессмертным</a></b> (ZX Format #3)<br>
+Методы реализации Cheat-режимов в игровых программах.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf4cheat.txt>В поисках вечной жизни</a></b> (ZX Format #4)<br>
+Методы реализации Cheat-режимов в игровых программах.
+</blockquote>
+
+
+
+<a name=formats><b>Форматы файлов</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/an12pt3x.txt>Формат модуля Pro Tracker v3.x</a></b> (AlCoNews #12)<br>
+Описание формата музыкальных модулей PT3.x, неполное. Актуально на момент написания (08.10.2002).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/pt37xfmt.txt>Формат модуля Pro Tracker v3.7x</a></b> (из дистрибутива v3.7)<br>
+Полное описание формата музыкальных модулей PT3.7x.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec02pt21.txt>Формат модуля Pro Tracker 2.101 by GDC</a></b> (Echo #02)<br>
+Описание формата компилированных музыкальных модулей PT2.101, текст декомпилированного плеера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec03stpr.txt>О формате музыкальных модулей Sound Tracker Pro by KSA software</a></b> (Echo #03)<br>
+Описание формата музыкальных модулей ST Pro, текст декомпилированного плеера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/an13t888.txt>Формат упакованного триколора .888</a></b> (AlCoNews #13)<br>
+Описание формата, процедура распаковки.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/an26chip.txt>Формат модуля Chip Tracker 1.x</a></b> (AlCoNews #26)<br>
+Собственно описание формата.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/fu1vechr.htm>Формат *.chr - векторных шрифтов</a></b> (Funeral #1)<br>
+Описание формата векторных шрифтов *.chr (использовались на PC в программах от Borland).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10anif.txt>Формат ani-файлов на ZX</a></b> (Info Guide #10)<br>
+Описание формата файлов с анимацией, поддерживаемого программами JpeGif Laboratory (GFXcon), Little Viewer, Ani Editor.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10mglz.txt>Формат пакованного файла MegaLZ</a></b> (Info Guide #10)<br>
+Краткое описание формата сжатия упаковщика MegaLZ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf7modfm.txt>Формат MOD-файла</a></b> (ZX Format #7)<br>
+Описание формата музыкальных модулей MOD (15 и 31 инструментов).
+</blockquote>
+
+
+
+<a name=compres><b>Сжатие данных</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bd08comp.txt>Улучшение сжимаемости картинок</a></b> (Born Dead #08)<br>
+Описывается способ небольшого улучшения сжимаемости картинок с помощью обычных архиваторов (Hrust/Hrum) за счёт перекодировки данных 'столбцами'.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg4pak3.txt>Упаковка триколоров</a></b> (ZX-Guide #4)<br>
+Несколько способов сжатия триколорных картинок. RLE, статистическое сжатие.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig5arfmt.txt>Форматы упакованных данных на ZX Spectrum</a></b> (Inferno Guide #5)<br>
+Большая статья с подробным описанием форматов и алгоритмов архиваторов PCDv6.2, MS Pack 01.96, Hrum 3.5i, Hrust 1.x/2.x/2.1/2.3/Hrip, RIP 0.2x, mRIP, ASC Screen Crusher, Maxsoft Screen Packer 1.6, Lazy Pack 2.0, LC 4.0/5.2.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7hpack.txt>Практические принципы LZ упаковки</a></b> (Info Guide #7)<br>
+Методы упаковки Lempel-Ziv, Huffman. Описание, особенности реализации.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zxvgfxpk.txt>Сжатие графической информации и что из этого можно получить</a></b><br>
+Способ сжатия графической информации без потерь.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10jpeg.txt>Декодирование JPEG</a></b> (Info Guide #10)<br>
+Описание формата сжатия графики с потерями JPEG, и алгоритма его декодирования.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv06huff.txt>Сжатие по Хаффмену</a></b> (Deja Vu #06)<br>
+Подробное описание алгоритма сжатия данных по Хаффмену.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv05mpck.txt>Депакер для MS-PACK</a></b> (Deja Vu #05)<br>
+Процедура депакера для упаковщика MS-PACK. В отличии от штатной, может выполняться при разрешённых прерываниях.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10pack.txt>Эффективность упаковщиков</a></b> (Info Guide #10)<br>
+Сводная таблица эффективности сжатия различных упаковщиков по состоянию на 2007 год.
+</blockquote>
+
+
+
+<a name=calcula><b>Вычисления</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/adv9sint.txt>Як синус забабахать</a></b> (Adventurer #9)<br>
+Об оптимальной генерации таблички синуса. Приводится пример процедуры.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ad10ieee.txt>Работа с IEEE-числами</a></b> (Adventurer #10)<br>
+Библиотека для работы с IEEE-числами (float), производит операции сложения, вычитания, умножения, деления, получения синуса, косинуса, квадрата числа; перевод в integer и обратно.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ad13nrnd.txt>Научное RND</a></b> (Adventurer #13)<br>
+Описание простого способа генерации псевдослучайных чисел.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10rndg.txt>О некоторых RND-генераторах</a></b> (Info Guide #10)<br>
+Генераторы для получения случайной битовой последовательности на основе LFSR. Генератор случайных байт. Примеры процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7mthex.txt>Распознавание и вычисление арифметических выражений</a></b> (Info Guide #7)<br>
+Вычисление арифметических выражений по их символьной записи. Лексический, синтаксический анализ, перевод выражение в обратную польскую запись, вычисление. Пример реализации.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig8tgnmt.txt>Синус и компания</a></b> (Info Guide #8)<br>
+Вычисление тригонометрических и алгебраических функций (SIN, TAN, ATAN, LOG, EXP и др.) в языках высокого уровня.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m09sqrcl.txt>Один полезный трюк с ^</a></b> (Move #09)<br>
+Метод построения таблицы квадратов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bg01squp.txt>Возведение в квадрат</a></b> (Bugs #1)<br>
+Два варианта процедуры возведения числа в квадрат, для 8-ми и 16-ти разрядных чисел.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2sqtg.txt>Генератор таблицы квадратов</a></b> (Demo Or Die #2)<br>
+Короткая процедура генерации таблицы квадратов чисел от 0 до 255.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bg01sqgt.txt>Квадратный корень</a></b> (Bugs #1)<br>
+Процедуры вычисления квадратного корня.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bd21apsq.txt>Извлечение приблизительного корня из числа</a></b> (Body #21)<br>
+Процедура извлечения приблизительного корня из числа.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bd22divd.txt>Делим 16 битное число на 8 битное</a></b> (Body #22)<br>
+Процедура деления 16-разрядного числа на 8-разрядное.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig9asort.txt>О сортировке</a></b> (Info Guide #9)<br>
+Обзор алгоритмов сортировки массива чисел.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dod2sort.txt>Сортировка</a></b> (Demo Or Die #2)<br>
+Несколько алгоритмов сортировки массива чисел с примерами процедур.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv8long.txt>LONG? Что это такое?</a></b> (Adventurer #8)<br>
+Процедуры для работы с целыми 32-разрядными знаковыми числами. Сложение, вычитание, печать, ввод.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09calc.txt>Конверсия числа со стека калькулятора в символьную строку</a></b> (Deja Vu #09)<br>
+Конверсия числа со стека калькулятора в символьную строку при помощи процедур ПЗУ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv05math.txt>Умножение, квадратный корень</a></b> (Deja Vu #05)<br>
+Процедуры умножения двух целых 8-разрядных чисел. Процедура вычисления квадратного корня.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf7fcalc.txt>Быстрые вычисления в ассемблере</a></b> (ZX Format #7)<br>
+Целочисленное деление и умножение, для однобайтовых и трёхбайтовых чисел.
+</blockquote>
+
+
+
+<a name=library><b>Описания библиотек</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/sng2mmlb.txt>Memory Management Library</a></b> (Scenergy #2)<br>
+Описание и примеры применения макробиблиотеки Memory Management Library (для TASM 4 и Alasm), предназначенной для управления распределением памяти, расчёта экранных адресов, создания таблиц смещений или указателей, задания полей структур данных.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng2zxal.txt>ZXA library</a></b> (Scenergy #2)<br>
+Описание и примеры применения библиотеки ZXA (для TASM 4), предназначенной для проигрывания анимаций.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09hrlb.txt>Hrust Library 2.02</a></b> (Deja Vu #09)<br>
+Описание библиотеки Hrust Library, предназначенной для упаковки/распаковки данных и другой работы с архивами Hrust.
+</blockquote>
+
+
+
+<a name=drivers><b>Драйвера, модули</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ec06rcrd.txt>Структура и организация RAM-диска в Real Commander</a></b> (Echo #06)<br>
+Структура и организация RAM-диска. Поддержка RAM-диска в дисковом драйвере. Драйвер расширенной памяти.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf6mmdrv.txt>Структура драйвера модема для программы MMD 2.20</a></b> (ZX Format #6)<br>
+Подробное описание устройства драйвера модема для MMD. Примеры кода.
+</blockquote>
+
+
+<a name=miscdev><b>Работа с устройствами</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc07cmos.txt>Программируем CMOS на К512ВИ1</a></b> (Black Crow #07)<br>
+Процедуры для работы с CMOS-часами.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf6gsprg.txt>Руководство по программированию General Sound</a></b> (ZX Format #6)<br>
+Руководство по программированию General Sound от автора встроенного ПО, версия 1.03. Журнальный вариант.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/se01gsfc.txt>GENERAL'изaция прогрaмм</a></b> (Spectrum Expert #1)<br>
+Подробное описание процесса переозвучивания игр для General Sound, на примере игры 'Target Renegade'.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ad13prgs.txt>Прямое программирование General Sound</a></b> (Adventurer #13)<br>
+Внутренее программирование GS - загрузка и исполнения в нём нужного кода; описание внутренних ресурсов GS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg45pent.txt>Дешифрация и раскладка портов ZX Spectrum (для Pentagon)</a></b> (ZX-Guide #4.5)<br>
+Карта портов устройств, устанавливаемых на Pentagon (управление памятью, AY, CMOS, Cache, Mouse и прочее).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/an32m384.htm>Видеорежим 384x304</a></b> (AlCoNews #32)<br>
+Видеорежим 384x304 для Pentagon: схема, раскладка видеопамяти, процедура переброса строки.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7m384p.htm>384x304: программирование</a></b> (Info Guide #7)<br>
+Видеорежим 384x304 для Pentagon: схема, раскладка видеопамяти, процедуры для работы с экраном. Статья частично дублирует содержание статьи из AlCoNews #32.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig8tsprg.txt>Программирование Turbo Sound</a></b> (Info Guide #8)<br>
+Описание принципа работы с Turbo Sound (два AY) по схеме NedoPC, процедуры определения наличия/отсутствия, выбора чипа.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/lp21prog.txt>Определение разных устройств</a></b> (LPrint #21)<br>
+Процедуры определения объёма памяти, наличия и типа AY/YM, количества тактов за прерывание, медленной памяти, теневого ОЗУ, порта #FF, C-DOS модема.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/fu15pdrv.txt>Драйвер принтера D-100M для MED</a></b> (Funeral #1.5)<br>
+Процедура драйвера, для компьютера KAY-1024 и редактора MicroEDitor 3.xx.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec05byte.txt>Двойное разрешение на ZX Spectrum</a></b> (Echo #05)<br>
+Краткое описание режима 512x192 и работа с ним на компьютере 'Байт 01'.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv02mgrs.txt>Перехват Magic и Reset на Scorpion ZS-256</a></b> (Deja Vu #02)<br>
+Способы и процедуры перехвата обработчиков нажатия клавиш Magic и Reset для компьютеров Scorpion.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10atms.txt>Аппаратный скроллинг на ATM2</a></b> (Info Guide #10)<br>
+Описание недокументированной аппаратной особенности компьютеров ATM Turbo 2 (не ATM1), позволяющей реализовать аппаратный скроллинг экрана.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv09ctrl.txt>Интерфейс</a></b> (Deja Vu #09)<br>
+Процедуры опроса клавиатуры, джойстика, мыши. Определение наличия мыши и джойстика.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/op14kemp.txt>Kempston Mouse</a></b> (Optron #14)<br>
+Определение наличия Kempston-мыши, опрос кнопок, получение координат.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec06vt37.txt>Контроллер прямого доступа к памяти КР1810ВТ37</a></b> (Echo #06)<br>
+Программирование микросхемы КР1810ВТ37, используемой в качестве контроллера ПДП в звуковой карте DMA Ultrasound Card.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec07vi53.htm>Программируемый таймер 8253</a></b> (Echo #07)<br>
+Программирование микросхемы КР580ВИ53 (8253, 8254), используемой в звуковой карте DMA Ultrasound Card.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec01azsd.txt>Azure Sound Drive v8.6</a></b> (Echo #01)<br>
+Описание звукового устройства Azure Sound Drive, совместимого с различными вариантами Soundrive и Covox. Адреса портов. Подключение устройства.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv02xtrm.txt>XTR-modem</a></b> (Deja Vu #02)<br>
+Описание возможностей XTR-modem, необходимый минимум информации о его программировании.
+</blockquote>
+
+
+
+<a name=miscmod><b>Работа с устройствами :: особенности моделей компьютеров</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/adv1atms.htm>Экраны ПК ATM-Turbo 2+</a></b> (Adventurer #1)<br>
+Описание организации памяти в расширенных видеорежимах компьютера ATM Turbo 2+.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec02byte.txt>Компьютер 'Байт-01'</a></b> (Echo #02)<br>
+Краткое описание особенностей компьютера 'Байт-01'. Контроллер дисковода, раздельные поля памяти.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/op07miko.txt>Miko Best 256KB</a></b> (Optron #7, #21)<br>
+Описание особенностей компьютера 'Miko Best 256KB', производившегося фирмой Miko, г. Тернополь.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bd10p1mb.txt>Pentagon 1024</a></b> (Born Dead #10)<br>
+Описание Pentagon 1024. Работа с его расширенной памятью и дополнительными устройствами.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ec01prfi.txt>Компьютер ZX Profi. Управление ресурсами</a></b> (Echo #01)<br>
+Описание некоторых особенностей компьютера Profi - системные порты, карта памяти для SP-DOS.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf4scorp.txt>Теневой монитор ZS Scorpion</a></b> (ZX Format #4)<br>
+Подробное описание пользовательских подпрограмм теневого монитора ZS Scorpion.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sp128pl3.txt>ZX Spectrum +3</a></b><br>
+Описание особенностей оригинального ZX Spectrum +3. Карта памяти, портов, распайка разъёмов.
+</blockquote>
+
+
+
+<a name=memoryd><b>Работа с памятью</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/ec05memd.txt>Драйвер памяти</a></b> (Echo #05)<br>
+Улучшенный вариант драйвера, опубликованного в ZX Format #5, для работы с расширенной памятью.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/qcmemdrv.txt>Драйвер памяти Quick Commander</a></b><br>
+Исходный текст драйвера расширенной памяти. Поддерживает до 2 МБ памяти, по стандартам Pentagon 128..512,1024,4096; ATM1 128..1024; ATM2 128..1024; Scorpion/Kay 128..1024; Profi 128..1024.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/on76ramd.txt>Драйвер расширенной памяти</a></b> (Online #76)<br>
+Исходный текст драйвера расширенной памяти. Поддерживает стандарты: ZX Spectrum, Kay, Profi, ATM1, ATM2, Scorpion.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/on44emem.txt>Расширенная память Profi и Scorpion</a></b> (Online #44)<br>
+Использование расширенной памяти на компьютерах Profi и Scorpion.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sng1ramd.txt>Драйвер RAM Disk'а для ZX Spectrum 128</a></b> (Scenergy #1)<br>
+Подробное описание драйвера RAM-диска, используемого в программе SpriteLand.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf5mmhlp.txt>MEMHELP</a></b> (ZX Format #5)<br>
+Процедура для определения типа компьютера и объёма расширенной памяти. Поддерживаются стандарты Profi, Scorpion, ZX Spectrum 48/128.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zf5autoc.txt>AUTOconfig v5.03</a></b> (ZX Format #5)<br>
+Процедура для определения типа компьютера и объёма расширенной памяти. Поддерживаются стандарты ZX Spectrum, ATM Turbo, Scorpion, Profi различных модификаций.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/sp22mdrv.txt>Драйвер верхней памяти</a></b> (Spectrofon #22)<br>
+Универсальная процедура для управления расширенной памятью на компьютерах ZX Spectrum, KAY, Profi, ATM Turbo, Scorpion различных модификций.
+</blockquote>
+
+
+
+<a name=usrifce><b>Пользовательский интерфейс</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/dv0aifce.txt>К вопросу о стрелках</a></b> (Deja Vu #0A)<br>
+Процедура управления &quot;стрелочным&quot; интерфейсом (опрашивает только Kempston-джойстик, выводит точку вместо стрелки).
+</blockquote>
+
+<blockquote>
+<b><a href=coding/asp7iarw.txt>Стрелочка без стрелочника</a></b> (ASpect #7)<br>
+Процедура &quot;стрелочного&quot; интерфейса. Включает опрос клавиатуры и вывод изображения стрелки.
+</blockquote>
+
+
+
+<a name=miscinf><b>Разное</b></a><br><br>
+
+<blockquote>
+<b><a href=coding/bc06tclc.txt>Определение тактовой скорости компьютера</a></b> (Black Crow #06)<br>
+Приводится процедура определения количества тактов в прерывании, взятая из Jemmeni Commander.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv4tmtr.txt>С точностью до...</a></b> (Adventurer #2)<br>
+Способы измерения времени работы программы в тактах; пример процедуры с точностью измерения до 4-х тактов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/bc07ncom.txt>Конверсия чисел</a></b> (Black Crow #07)<br>
+Небольшая процедура для конверсии чисел из символьного вида в десятичный.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig6decom.txt>Декомпиляция программ</a></b> (Info Guide #6)<br>
+Описание процесса и способов эффективной декомпиляции программ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7reloc.txt>Перемещаемость программ</a></b> (Info Guide #7)<br>
+Методы, используемые при создании больших перемещаемых программ.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig7bigpr.txt>Большие проекты и дисциплина</a></b> (Info Guide #7)<br>
+Способы эффективного ведения больших проектов на ассемблере.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/zg1etud3.txt>Выполнение или пропуск 7-тактовой команды за 19 тактов</a></b> (ZX-Guide #1)<br>
+Короткий фрагмент кода, показывающий, как можно выполнить или пропустить одну семитактовую команду за одни и те же 19 тактов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig5autoc.txt>Автосборка программы</a></b> (Inferno Guide #5)<br>
+Обычные методы сборки программ, их недостатки и реализация автоматической сборки программы.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/m04orgzx.txt>Различия оригинального ZX Spectrum и клонов</a></b> (Move #04)<br>
+Описаны отличия фирменного варианта ZX Spectrum от отечественных клонов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv8vidc.txt>Особенности видеоконтроллера ZX Spectrum</a></b> (Adventurer #8)<br>
+Описание особенности видеоконтроллера, связанной с выборкой данных атрибутов.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/adv8opas.txt>Art Studio и принцип открытой архитектуры</a></b> (Adventurer #8)<br>
+Организация системы загружаемых модулей для версии Art Studio v2.01c, corrected by ROM/SM and FUX/SM.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/dv0awkbt.txt>Загрузчик для рабочей дискеты</a></b> (Deja Vu #0A)<br>
+Загрузка различных программ в зависимости от удержания клавиши при сбросе компьютера.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10mult.txt>Мультиплатформа</a></b> (Info Guide #10)<br>
+Описание особенностей создания мультиплатформенного проекта - программы, собирающейся под разные платформы из одного исходника с помощью условной компиляции. Описание особенностей платформ Sam Coupe и MSX2.
+</blockquote>
+
+<blockquote>
+<b><a href=coding/ig10grui.txt>Построение графического пользовательского интерфейса</a></b> (Info Guide #10)<br>
+Описание различных аспектов организации графического пользовательского интерфейса.
+</blockquote>
+
+</body></html>

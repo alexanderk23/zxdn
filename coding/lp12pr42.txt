@@ -1,0 +1,366 @@
+Из газеты LPrint #12, Минск, 26.07.97
+
+
+
++----------------------------------------+
+| --------- Программирование ----------- |
++----------------------------------------+
+ 
+                              (C) PAWEL/RS
+ 
+         В библиотеку программиста
+ 
+       Быстрый и компактный драйвер
+     печати 42 (..) символов в строке
+ 
+ 
+   На  протяжении  многих месяцев мной со-
+вершенствовался  и обкатывался драйвер вы-
+вода  42 символов в строке. Перед вами ко-
+нечный продукт, и я надеюсь с этого момен-
+та мне больше не придется смотреть на мед-
+ленно печатающися текст. Принцип использо-
+ванный  в  этом  драйвере если разобраться
+очень  прост, можно даже сказать несколько
+банальную  фразу: -"Как и все гениальное".
+Конечно я не претендую на авторское право,
+он в том или ином варианте был использован
+и  раньше, но мне кажется удалось добиться
+наилучших результатов при небольшом разме-
+ре  программы.  Ну  конечно если вам нужна
+еще большая скорость, то вы можете раскру-
+тить  вывод символа в каждой возможной по-
+зиции, это по моим рассчетам займет не бо-
+лее  500  байт. Можете  также использовать
+ZX-ASM'овский  метод - выводить сразу по 4
+символа. Для быстрого рассчета адреса сим-
+вола  в  фонте  здесь применен специальный
+формат,  отличный  от  ZX-ASM'овского. Не-
+большая  процедурка  конвертирования фонта
+приводится.  Фонт  должен располагаться по
+ровному  адресу,  то есть адресу с младшим
+байтом  равным  нулю, также как и табличка
+масок. Я надеюсь вы понимаете, что драйвер
+необходимо  компилировать  в  быструю  па-
+мять.  Программа   набрана   в  ассемблере
+ZX-ASM3. Загрузите  текст, удалите все не-
+нужное, выполните функцию "Import".
+ 
+;42 Symbols driver by Pawel/RS/NHG
+Печать текста, HL -Адрес (код 0 -конец)
+WRITE   LD      A,(HL)
+        INC     HL
+        AND     A
+        RET     Z
+        CP      32
+        JR      C,WRIT2
+WRIT1   PUSH    HL
+        CALL    PRSYM
+        POP     HL
+        JR      WRITE
+ 
+Обработка управляющих кодов:
+;(Здесь приведены только два упр.кода,но
+ничто не помешает вам дописать свои)
+WRIT2   CP      13
+        JR      Z,PR13
+        CP      22
+        JR      Z,PR22
+        LD      A,63
+        JR      WRIT1
+PR13    PUSH    HL
+        LD      HL,(PSA)
+        LD      A,L
+        AND     224
+        ADD     A,#20
+        LD      L,A
+        JR      NZ,PR13_1
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+        CP      #58
+        JR      C,PR13_1
+        LD      H,#40
+PR13_1  LD      (PSA),HL
+        XOR     A
+        LD      (LBT),A
+        POP     HL
+        JR      WRITE
+PR22    LD      A,(HL)
+        INC     HL
+        PUSH    DE
+        PUSH    HL
+        CALL    3742
+        POP     DE
+        LD      A,(DE)
+        INC     DE
+        ADD     A,L
+        LD      L,A
+        LD      (PSA),HL
+        XOR     A
+        LD      (LBT),A
+        POP     HL
+        EX      DE,HL
+        JP      WRITE
+ 
+Собственно драйвер, в A -код символа
+PRSYM   LD      HL,0
+PSA     EQU     $-2 ;текущ.экранный адр.
+        LD      E,A
+LS      LD      D,FONT/256
+LBT EQU $+1:LD  A,0 ;колич.сдв.битов
+        AND     A
+        JP      Z,LS6
+        LD      C,A
+        NEG
+        SUB     JPSSL-SSL+2
+        LD      (JPSSL+1),A
+        SLA     C
+        LD      B,TABLS/256
+        LD      A,(BC)
+        LD      (LS1+1),A
+        INC     C
+        LD      A,(BC)
+        LD      (LS2+1),A
+        LD      B,9
+        JP      LS5
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+SSL     LD      C,A
+LS1     AND     0
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      A,C
+LS2     AND     0
+        OR      (HL)
+        LD      (HL),A
+        DEC     L
+        INC     H
+LS5     LD      A,(DE)
+        INC     D
+JPSSL   DJNZ    SSL
+LS6A  ;сюда можно вставить вывод атриб.
+        LD      A,(LBT)
+        ADD     A,6
+        LD      (LBT),A
+        CP      8
+        RET     C
+        AND     7
+        LD      (LBT),A
+        LD      HL,(PSA)
+        INC     L
+        JP      NZ,PRS3
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+PRS3    LD      (PSA),HL
+        RET
+ 
+Раскрученная печать символа без сдвига,
+можно совсем убрать или использовать цикл
+LS6     LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        JP      LS6A
+ 
+По ровному адресу:
+FONT    INSERT  "Font10M" ;Сконв.фонт
+ 
+Таблица, располагается по адресу с
+младшим байтом равным 0 (для быстрого
+расчета, но можно и по неровному адресу,
+предварительно подкорректировав расчет).
+TABLS   DB      %11111100,%00000000
+        DB      %01111110,%00000000
+        DB      %00111111,%00000000
+        DB      %00011111,%10000000
+        DB      %00001111,%11000000
+        DB      %00000111,%11100000
+        DB      %00000011,%11110000
+        DB      %00000001,%11111000
+ 
+Если вам необходимо печатать символы с
+атрибутами, то вставьте следующую про-
+цедурку:
+ 
+        LD      HL,(PSA)
+        LD      A,H
+        AND     #18
+        RRCA
+        RRCA
+        RRCA
+        ADD     A,#58
+        LD      H,A
+ATR EQU $+1:LD A,7 ;текущие атрибуты
+        LD      (HL),A
+ 
+   Кстати  стандартный код изменения атри-
+бутов 16, во втором  байте атрибут. Именно
+этот формат будет поддерживать VIEW'ер но-
+вой версии REAL COMMANDER'а.
+ 
+ Для печати с очисткой предыдущего изобра-
+жения   нужна  несколько  модифицированная
+процедура:
+ 
+LS      LD      E,A
+        LD      D,FONT/256
+PSA     EQU     $+1
+        LD      HL,0
+LBT EQU $+1:LD  A,0
+        AND     A
+        JP      Z,LS6
+        LD      C,A
+        NEG
+        SUB     JPSSL-SSL+2
+        LD      (JPSSL+1),A
+        SLA     C
+        LD      B,TABLS/256
+        LD      A,(BC)
+        LD      (LS1+1),A
+        CPL
+        LD      (LS3+1),A
+        INC     C
+        LD      A,(BC)
+        LD      (LS2+1),A
+        CPL
+        LD      (LS4+1),A
+        LD      B,9
+        JP      LS5
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+SSL     LD      C,A
+        LD      A,(HL)
+LS3     AND     0
+        LD      (HL),A
+        LD      A,C
+LS1     AND     0
+        OR      (HL)
+        LD      (HL),A
+        INC     L
+        LD      A,(HL)
+LS4     AND     0
+        LD      (HL),A
+        LD      A,C
+LS2     AND     0
+        OR      (HL)
+        LD      (HL),A
+        DEC     L
+        INC     H
+LS5     LD      A,(DE)
+        INC     D
+JPSSL   DJNZ    SSL
+LS6A    LD      A,(LBT)
+        ADD     A,6
+        LD      (LBT),A
+        CP      8
+        RET     C
+        AND     7
+        LD      (LBT),A
+        LD      HL,(PSA)
+        INC     L
+        JP      NZ,PRS3
+        LD      A,H
+        ADD     A,8
+        LD      H,A
+PRS3    LD      (PSA),HL
+        RET
+ 
+Здесь заключено в цикл
+LS6     LD      B,8
+LS6B    LD      A,(HL)
+        AND     %00000011
+        LD      (HL),A
+        LD      A,(DE)
+        INC     D
+        OR      (HL)
+        LD      (HL),A
+        INC     H
+        DJNZ    LS6B
+        JP      LS6A
+ 
+КОНВЕРТОР ФОНТОВ ZX-ASM'а:
+        ORG     #6000
+        LD      HL,FONT1
+        LD      DE,FONT2
+        LD      C,0
+N1      LD      B,8
+        PUSH    DE
+N2      LD      A,(HL)
+        LD      (DE),A
+        INC     HL
+        INC     D
+        DJNZ    N2
+        POP     DE
+        INC     E
+        DEC     C
+        JP      NZ,N1
+        LD      HL,FONT2
+        LD      DE,#4000
+        LD      BC,2048
+        LDIR
+        JP      7997
+        ORG     #8000
+FONT1   INSERT  "Font8"
+FONT2   EQU     $
+ 
+   Программа сконвертирует и покажет фонт,
+для  его  записи  узнайте  значение  метки
+FONT2 и выйдя в TR-DOS запишите его (длина
+2048 байт).
+ 
+P.S.: Данный драйвер с успехом был исполь-
+зован в моей последней программе REAL COM-
+MANDER.  Если его кому-нибудь удасться еще
+ускорить, то  пишите  мне  или  в редакцию
+газеты LPRINT.

@@ -1,0 +1,77 @@
+Из журнала ZX-Guide#4.5, Рязань, 08.2002
+
+
+
+U#74
+05.06.02
+Samara-City
+ 
+          Удобству отлавливания глюков дешифрации посвящается...
+ 
+* и красным цветом помечены биты(адреса),
+по которым производится дешифрация портов в Пне-128(512,1024)
+ 
+  ДЕШИФРАЦИЯ И РАСКЛАДКА ПОРТОВ  ZX-SPECTRUM ( по Пентагону )
+ =============================================================
+ 
+                      ПОРТЫ КОНФИГУРАЦИИ.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+1FFD  0   0   0   1   1   1  1  1  1  1  1  1  1  1  0  1  SCORP
+7FFD  0*  1   1   1   1   1  1  1  1  1  1  1  1  1  0* 1  Пень
+DFFD  1*  1*  0*  1   1   1  1  1  1  1  1  1  1  1  0* 1  Профи
+FDDF  1   1   1   1   1   1  0  1  1  1  1  1  1  1  0  1  ATM
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                    МУЗЫКАЛЬНЫЙ СОПРОЦЕССОР.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+BFFD  1*  0*  1*  1   1   1  1  1  1  1  1  1  1  1  0* 1  WRITE
+FFFD  1   1   1   1   1   1  1  1  1  1  1  1  1  1  0  1  READ
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                    CMOS-ЧАСЫ (по GLUK'у).
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+BFF7  1   0   1   1   1   1  1  1  1  1  1  1  0  1  1  1 R/W D
+DFF7  1   1   0   1   1   1  1  1  1  1  1  1  0  1  1  1 ADR.WR
+EFF7  1*  1*  1*  0*  1   1  1  1  1  1  1  1  0* 1  1  1 Enable
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                КОНТРОЛЛЕР КЭША 32/128Kb (ЧeВo#7).
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+F3F7  1   1   1   1   0*  0* 1  1  1  1  1  1  0* 1  1  1 PAGE
+FBF7  1   1   1   1   1   0  1  1  1  1  1  1  0  1  1  1 Enable
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                        KEMPSTON MOUSE.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+FADF  1   1   1   1   1   0* 1  0* 1* 1  0* 1  1  1  1  1 Button
+FBDF  1   1   1   1   1   0  1  1  1  1  0  1  1  1  1  1 Xкоорд
+FFDF  1   1   1   1   1   1  1  1  1  1  0  1  1  1  1  1 Yкоорд
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                        СИСТЕМНЫЕ ПОРТЫ.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+xxFB  x   x   x   x   x   x  x  x  1  1  1  1  1  0* 1  1  ZXLpr
+xxFE  x   x   x   x   x   x  x  x  1  1  1  1  1  1  1  0* !!!!
+xxFF  x   x   x   x   x   x  x  x  1  1  1  1  1  1  1  1  Attr
+xx1F  x   x   x   x   x   x  x  x  0  0  0* 1  1  1  1  1  K.Joy
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                     ПОРТЫ КОНТРОЛЛЕРА FDD.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+001F  0   0   0   0   0   0  0  0  0* 0* 0* 1* 1  1  1* 1* Comm.
+003F  0   0   0   0   0   0  0  0  0  0  1  1  1  1  1  1  Track
+005F  0   0   0   0   0   0  0  0  0  1  0  1  1  1  1  1  Sect.
+007F  0   0   0   0   0   0  0  0  0  1  1  1  1  1  1  1  DATA
+00FF  0   0   0   0   0   0  0  0  1  1  1  1  1  1  1  1  Syst.
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+ 
+                 COVOX'ы (SOUNDRIVE1.51+ etc.).
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0 NOTE
+xx0F  x   x   x   x   x   x  x  x  0  0* 0* 0* 1  1  1  1 Chan.A
+xx1F  x   x   x   x   x   x  x  x  0  0  0  1  1  1  1  1 Chan.B
+xx4F  x   x   x   x   x   x  x  x  0  1  0  0  1  1  1  1 Chan.C
+xx5F  x   x   x   x   x   x  x  x  0  1  0  1  1  1  1  1 Chan.D
+xxDD  x   x   x   x   x   x  x  x  1  1  0  1  1  1  0  1 Profi
+xxFB  x   x   x   x   x   x  x  x  1  1  1  1  1* 0* 1* 1 Пень
+PORT A15 A14 A13 A12 A11 A1O A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+             Девиз:Дополни и передай другому!!!!!

@@ -1,0 +1,151 @@
+Из журнала Deja Vu #06, Кемерово, 01.10.98
+
+
+
+(C) Max/Cyberax Software/BD
+__________________________________________
+
+          Драйвер чтения/записи
+          ---------------------
+
+   Технические характеристики:
+
+1) Длина - 166 байт.
+
+2) TURBO чтение/запись.
+
+3) Дисководы A-D.
+
+4) При  ошибках - не виснет,  в отличие от
+   драйверов,  использующих куски  MAGIC в
+   TR-DOS.
+
+5) Не сбрасывает комп при включенном TURBO
+
+6) Лучше  всего работает на  5.03,  5.04 и
+   подобных им.  На 5.01 может (?) формат-
+   нуть трек...
+
+7) Вызывается аналогично #3D13, C=5/6.
+
+8) Может работать и при разрешенных преры-
+   ваниях (но медленно).
+
+9) Упрощенная обработка  ошибок: если биты
+   0-6  регистра #1F сброшены - считается,
+   что ошибки нет. Иначе - повтор.
+
+А) Можно изменять количесво попыток чтения
+   и записи. Если сектор все равно не  чи-
+   тается (не пишется),то определяется но-
+   мер дорожки  под  головкой и происходит
+   ПЕРЕПОЗИЦИОНИРОВАНИЕ (ну и слово...).
+
+B) Драйверу нужен буфер для чтения иденти-
+   фикатора сектора (6 байтов).
+
+C) Толком не тестировался...
+
+        ORG   #6000
+        ENT
+;Written by Max/CBX/BD
+;XAS Assembler, 06.08.98.
+
+        LD    A,(#5D16)
+        AND   3
+        LD    (DRV+1),A; Номер драйва.
+        LD    HL,#4000
+        LD    DE,#0000
+        LD    BC,#1805
+        CALL  DRIVER
+        RET
+
+DRIVER  DI
+        LD    IX,#3FE5
+        LD    A,#80
+        BIT   0,C
+        JR    NZ,LD_MODE
+        LD    LX,#CA
+        LD    A,#A0
+LD_MODE LD    (CMD+1),A
+        LD    (PROC+2),IX
+MAIN    LD    A,#2C
+        BIT   0,D
+        JR    NZ,DRV
+        LD    A,#3C
+DRV     OR    0
+        LD    C,#FF
+        CALL  REG
+        LD    A,D
+        RRA
+        LD    C,#7F
+        CALL  REG
+        LD    A,#18
+        CALL  CMD_RDY
+        LD    C,8; Кол-во попыток.
+ERR     PUSH  HL,BC
+        XOR   A
+        LD    (#5CD6),A
+        OUT   (#FE),A
+        LD    A,E
+        INC   A
+        LD    C,#5F
+        CALL  REG
+CMD     LD    A,#80
+        CALL  COMM
+PROC    LD    IX,#3FE5
+        LD    C,#7F
+        CALL  TODOS
+        LD    BC,CONT
+        PUSH  BC
+ONE     LD    BC,ONE
+        PUSH  BC
+        LD    B,#01
+        PUSH  BC
+        LD    BC,#2099
+        PUSH  BC
+        JR    DOS; Check #1F.
+CONT    DI
+        POP   BC,HL
+        LD    A,(#5CD6)
+        AND   A
+        JR    Z,NOERR
+        DEC   C
+        JR    NZ,ERR
+        OUT   (#FE),A
+        PUSH  HL
+        LD    HL,TRK_BF
+        LD    A,#C0
+        CALL  CMD_RDY
+        POP   HL
+        LD    A,(TRK_BF)
+        LD    C,#3F
+        CALL  REG
+        JR    MAIN
+NOERR   INC   H
+        INC   E
+        BIT   4,E
+        JR    Z,CNT
+        LD    E,A
+        INC   D
+CNT     DJNZ  MAIN
+        EI
+        RET
+COMM    LD    C,#1F
+REG     LD    IX,#2A53
+TODOS   PUSH  IX
+DOS     JP    #3D2F
+CMD_RDY CALL  COMM
+        LD    C,#7F
+READY   LD    IX,#3FE5
+        JR    TODOS
+TRK_BF  EQU   #8000
+
+P.S. В прошлом номере была моя статейка на
+тему загрузки бейсика.Приведенная там про-
+цедура рассчитана на драйвер чтения, кото-
+рый после своей работы в HL  выдает  адрес
+байта, находящегося сразу после последнего
+загруженного сектора.
+   Если кто будет использовать  мою прогу,
+учтите это.

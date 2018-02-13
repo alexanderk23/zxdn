@@ -1,0 +1,872 @@
+<pre>
+Из журнала Demo or Die #2, 1999
+
+
+
+   (c) by Wolf of eTc/Scene
+
+  Phong  Shading  (fake phong - все просто
+и красиво).
+
+                Истина - это заблуждение,
+      длящееся столетие; заблуждение же -
+     это истина, пpосуществовавшая минуту.
+                             (C) Головачев
+
+
+   Как  сказал  мне  один товарищ по Fido:
+"True  phong  - тупизна, это конечно imho.
+Фонг   -   это   тот   же   Гуро,   только
+интерполируются  не значение интенсивности
+цвета, а значения вектора внешней нормали,
+которое  затем  используется  для рассчета
+цвета."
+   Хочу добавить, что интерполяция вектора
+внешней  нормали  происходит в пределах от
+-1  до  1  (Если нормаль нормирована, т.е.
+приведенная к единичной длине).
+
+   1.   Прежде   всего,  немного  линейной
+алгебры.
+
+   Вектор  нормали к плоскости - это такой
+вектор, который перпендикулярный плоскости
+относительно начала координат.
+
+   Нормирование  нормали  - это приведение
+нормали  к  единичной  длине, это можна
+делать вот так:
+
+   Len=sqrt(x*x+y*y+z*z)
+   x=x/len
+   y=y/len
+   z=z/len
+
+   x,y,z - координаты вектора нормали.
+
+   Но   я   так   не  делаю,  лучше  всего
+нормировать  не  от  -1 до 1, а в каких-то
+других  удобных  пределах, например от -64
+до 64, тогда все будет выглядить следующим
+образом:
+
+   Len=sqrt(x*x+y*y+z*z)
+   x=x*64/len
+   y=y*64/len
+   z=z*64/len
+
+
+  И последнее, это векторное произведение.
+Формула  конечно  не без умножения, но что
+поделаешь:
+
+   V3.x=V1.y*V2.z-V1.z*V2.y
+   V3.y=V1.z*V2.x-V1.x*V2.z
+   V3.z=V1.x*V2.y-V1.y*V2.x
+
+   V3   -   это   векторное   произведение
+векторов V1 и V2.
+
+   2. Precalculations for Phong Shading
+
+   Исходя    из   того,   что   к   любому
+трехмерному  объекту, нормаль меняется в
+каждой  грани,  нам  необходимо  посчитать
+нормали к каждой вершине объекта.
+   Нормаль в вершине считается как среднее
+арифметическое   всех  нормалей  к  тем
+граням,    которые    принадлежат   данной
+вершине.
+   А нормаль к грани считается так:
+
+  Пусть    есть    у   нас   три   вершины
+треугольника, заданные по часовой стрелке:
+
+   V1(x,y,z)
+   V2(x,y,z)
+   V3(x,y,z),
+
+тогда
+
+   V1'=V3-V1
+   V2'=V2-V1
+
+   А   сама   нормаль  уже  считается  как
+векторное произведение двух векторов V1' и
+V2':
+
+   normal=vector_mul(V1',V2')   (умножение
+описано выше:)
+
+
+   Вот  процедура  рассчета  нормалей  для
+каждой  грани на  C,  т.к.  на Basic'e это
+будет выглядеть извратно:
+
+   // part of 3D-engine (c) by Wolf of eTc
+group/Scene
+   // Рассчет нормалей к граням
+
+  for (i=0;i&lt;polygons;i++)
+  {
+    px1=points_e[faces[i][0]][0];
+    py1=points_e[faces[i][0]][1];
+    pz1=points_e[faces[i][0]][2];
+
+    px2=points_e[faces[i][1]][0];
+    py2=points_e[faces[i][1]][1];
+    pz2=points_e[faces[i][1]][2];
+
+    px3=points_e[faces[i][2]][0];
+    py3=points_e[faces[i][2]][1];
+    pz3=points_e[faces[i][2]][2];
+
+   v1x=px1-px2; v1y=py1-py2; v1z=pz1-pz2;
+   v2x=px1-px3; v2y=py1-py3; v2z=pz1-pz3;
+
+   nx=v1y*v2z-v1z*v2y;     //    Векторное
+                           // произведение
+   ny=v1z*v2x-v1x*v2z;
+   nz=v1x*v2y-v1y*v2x;
+   // нормализация в пределах -127..127
+  len=sqrt(nx*nx+ny*ny+nz*nz);
+  if(len!=0)
+    {
+      normals[i][0]=nx*127/len;
+      normals[i][1]=ny*127/len;
+      normals[i][2]=nz*127/len;
+    }
+   else {
+          normals[i][0]=0;
+          normals[i][1]=0;
+          normals[i][2]=0;
+        }
+  }
+}
+
+
+   3.  Процедура  для  рассчета нормалей в
+вершинах объекта.
+
+   // part of 3D-engine (c) by Wolf of eTc
+group/Scene
+   // Рассчет нормалей к вершинам объекта
+
+void GetNList(void)
+{
+  int i,j,h,nx,ny,nz;
+
+   // заполняем массив ноpмалей нулями
+  for(i=0;i&lt;vertex;i++)
+   {
+     Nlist[i][0]=0;
+     Nlist[i][1]=0;
+     Nlist[i][2]=0;
+   }
+
+
+  for(i=0;i&lt;vertex;i++)
+   {
+     h=1;
+     for(j=0;j&lt;polygons;j++)
+      {
+   if(faces[j][0]==i  || faces[j][1]==i ||
+faces[j][2]==i)
+           {
+             Nlist[i][0]+=normals[j][0];
+             Nlist[i][1]+=normals[j][1];
+             Nlist[i][2]+=normals[j][2];
+             h++;
+           }
+      }
+            Nlist[i][0]/=h;
+            Nlist[i][1]/=h;
+            Nlist[i][2]/=h;
+   }
+}
+
+
+
+  4.    Исходник    рассчета   нормали   к
+треугольнику.
+
+
+;(c) by Wolf of eTc/Scene
+
+PARAM   EQU 32;  NORMALIZE -61...32
+;Параметры нормализации, обычно зависит от
+;размера
+;текстуры освещенности
+
+        ORG 25000
+
+        LD DE,FACES; список полигонов
+        LD BC,1; количество полигонов
+GETC
+        PUSH DE
+        LD IX,X1
+        CALL GETPOLY; возьмем координаты
+; первой точки треугольника
+        LD IX,X2
+        CALL GETPOLY  ; ... второй
+        LD IX,X3
+        CALL GETPOLY  ; ... третьей
+        LD DE,X1      ;
+        LD HL,X2      ;
+        CALL SUBVEC   ;разница
+                      ;векторов 1 и 2
+        LD DE,X1      ;
+        LD HL,X3      ;
+        CALL SUBVEC   ;разница
+                      ;векторов 1 и 3
+; N_X = ....          ;рассчет нормали n_x
+
+        LD A,(X3+2)   ;V2Z
+        LD H,A
+        CALL MOVZX
+        LD A,(X2+1)   ;V1Y
+        CALL MUL      ;произведение
+        LD (T1),HL
+        LD A,(X3+1)   ;V2Y
+        LD H,A
+        CALL MOVZX
+        LD A,(X2+2)   ;V1Z
+        CALL MUL      ;произведение
+        LD (T2),HL
+        LD HL,(T1)
+        LD DE,(T2)
+        AND A
+        SBC HL,DE
+        SRA H
+        RR L
+        LD (N_X),HL   ;сохраним результат
+; произведем аналогию с векторами n_y, n_z
+;таким же путем
+; N_Y = ....
+        LD A,(X3)     ;V2X
+        LD H,A
+        CALL MOVZX
+        LD A,(X2+2)   ;V1Z
+        CALL MUL
+        LD (T1),HL
+        LD A,(X3+2)   ;V2Z
+        LD H,A
+        CALL MOVZX
+        LD A,(X2)     ;V1X
+        CALL MUL
+        LD (T2),HL
+        LD HL,(T1)
+        LD DE,(T2)
+        AND A
+        SBC HL,DE
+        SRA H
+        RR L
+        LD (N_Y),HL
+; N_Z = ....
+        LD A,(X3+1)   ;V2Y
+        LD H,A
+        CALL MOVZX
+        LD A,(X2)     ;V1X
+        CALL MUL
+        LD (T1),HL
+        LD A,(X3)     ;V2X
+        LD H,A
+        CALL MOVZX
+        LD A,(X2+1)   ;V1Y
+        CALL MUL
+        LD (T2),HL
+        LD HL,(T1)
+        LD DE,(T2)
+        AND A
+        SBC HL,DE
+        SRA H
+        RR L
+        LD (N_Z),HL
+
+        LD HL,(N_X)
+        CALL ABS      ;модуль числа
+        LD L,A
+        LD H,0
+        CALL UMUL; беззнаковое умножение
+        LD (LEN),HL
+        LD HL,(N_Y)
+        CALL ABS
+        LD L,A
+        LD H,0
+        CALL UMUL
+        LD DE,(LEN)
+        ADD HL,DE
+        LD (LEN),HL
+        LD HL,(N_Z)
+        CALL ABS
+        LD L,A
+        LD H,0
+        CALL UMUL
+        LD DE,(LEN)
+        ADD HL,DE
+        LD BC,HL
+        CALL SQRT ; квадратный корень
+        LD (LEN),DE
+        CALL NORMZ
+        POP DE
+.3      INC DE    ; INC DE три раза :)
+        POP BC
+        DEC BC
+        LD A,B
+        OR C
+        JP NZ,GETC
+        RET
+
+; HL=H L=0
+MOVZX
+        LD L,0
+        BIT 7,H
+        JR Z,POLOJ
+        LD L,H
+        LD H,#FF
+        RET
+POLOJ   LD L,H
+        LD H,0
+        RET
+;переменные для вычисления
+X1      DB 0
+Y1      DB 0
+Z1      DB 0
+
+X2      DB 0
+Y2      DB 0
+Z2      DB 0
+
+X3      DB 0
+Y3      DB 0
+Z3      DB 0
+
+N_X     DW 0
+N_Y     DW 0
+N_Z     DW 0
+
+T1      DW 0
+T2      DW 0
+
+LEN     DW 0
+
+;разница векторов
+;DE=уменьшаемое
+;HL=вычитаемое
+
+SUBVEC
+        LD B,3
+SUBV1   LD A,(DE)
+        LD C,(HL)
+        SUB C
+        LD (HL),A
+        INC HL
+        INC DE
+        DJNZ SUBV1
+        RET
+
+;GET POLY COORDS
+GETPOLY
+        LD A,(DE)
+        LD L,A
+        LD H,0
+        LD BC,HL
+        ADD HL,HL
+        ADD HL,BC
+        LD BC,VERTEX
+        ADD HL,BC
+        LD A,(HL)
+        LD (IX),A
+        INC HL
+        LD A,(HL)
+        LD (IX+1),A
+        INC HL
+        LD A,(HL)
+        LD (IX+2),A
+        INC DE
+        RET
+
+;нормализация вектора в заданый пределах
+NORMZ
+        LD HL,(N_X)
+        LD A,PARAM
+        CALL MUL
+        LD DE,(LEN)
+        CALL DIV
+        LD (N_X),HL
+
+        LD HL,(N_Y)
+        LD A,PARAM
+        CALL MUL
+        LD DE,(LEN)
+        CALL DIV
+        LD (N_Y),HL
+
+        LD HL,(N_Z)
+        LD A,PARAM
+        CALL MUL
+        LD DE,(LEN)
+        CALL DIV
+        LD (N_Z),HL
+        RET
+
+;список полигонов
+;полигон описывается тремя точками
+
+FACES   DB 0,1,2
+
+;список вершин треугольников (x,y,z)
+VERTEX
+        DB -10,1,4
+        DB 2,1,17
+        DB 30,15,70
+
+;умножение со знаком
+;SIGNED MULTIPLY HL=HL*A
+
+MUL
+
+        OR A
+        JR NZ,NO_ZER
+        LD L,A
+        LD H,A
+        RET
+NO_ZER
+        PUSH AF
+        LD A,H
+        OR L
+        JR NZ,NO2ZER
+        POP AF
+        RET
+NO2ZER
+        POP AF
+        EX AF,AF
+        XOR A
+        EX AF,AF
+
+        BIT 7,A
+        JR Z,NO_SIGA
+
+        NEG
+        EX AF,AF
+        CPL
+        EX AF,AF
+NO_SIGA
+
+        BIT 7,H
+        JR Z,NO_SIGH
+
+        PUSH AF
+        LD A,L
+        NEG
+        LD L,A
+        LD A,H
+        CPL
+        LD H,A
+        POP AF
+
+        EX AF,AF
+        CPL
+        EX AF,AF
+NO_SIGH
+
+        EX DE,HL
+        LD H,0
+        LD L,H
+        ADD A,A
+        JR NC,MUL1
+        ADD HL,DE
+MUL1    ADD HL,HL
+        ADD A,A
+        JR NC,MUL2
+        ADD HL,DE
+MUL2    ADD HL,HL
+        ADD A,A
+        JR NC,MUL3
+        ADD HL,DE
+MUL3    ADD HL,HL
+        ADD A,A
+        JR NC,MUL4
+        ADD HL,DE
+MUL4    ADD HL,HL
+        ADD A,A
+        JR NC,MUL5
+        ADD HL,DE
+MUL5    ADD HL,HL
+        ADD A,A
+        JR NC,MUL6
+        ADD HL,DE
+MUL6    ADD HL,HL
+        ADD A,A
+        JR NC,MUL7
+        ADD HL,DE
+MUL7    ADD HL,HL
+        ADD A,A
+        JR NC,MEXIT
+        ADD HL,DE
+MEXIT
+        EX AF,AF
+        OR A
+        JR Z,UNSIG
+
+        LD A,L
+        NEG
+        LD L,A
+        LD A,H
+        CPL
+        LD H,A
+UNSIG
+        EX AF,AF
+
+        RET
+
+
+;Деление со знаком
+;HL.DE=HL/DE
+DIV
+
+        EX AF,AF
+        XOR A
+        EX AF,AF
+
+
+        BIT 7,H
+        JR Z,NOSIGH
+
+        PUSH AF
+        LD A,L
+        NEG
+        LD L,A
+        LD A,H
+        CPL
+        LD H,A
+        POP AF
+
+        EX AF,AF
+        CPL
+        EX AF,AF
+NOSIGH
+
+        BIT 7,D
+        JR Z,NOSIGD
+
+        PUSH AF
+        LD A,E
+        NEG
+        LD E,A
+        LD A,D
+        CPL
+        LD D,A
+        POP AF
+
+        EX AF,AF
+        CPL
+        EX AF,AF
+NOSIGD
+        EX DE,HL
+        LD A,L
+        OR H
+        JR Z,DIVZERO
+        XOR A
+        LD B,A
+        LD C,A
+        INC A
+DIV2    BIT 7,H
+        JR NZ,DIV1
+        ADD HL,HL
+        INC A
+        JR DIV2
+DIV1    EX DE,HL
+DIV4    OR A
+        SBC HL,DE
+        CCF
+        JR C,DIV3
+        ADD HL,DE
+        OR A
+DIV3    RL C
+        RL B
+        RR D
+        RR E
+        DEC A
+        JR NZ,DIV4
+        PUSH BC
+        PUSH HL
+        POP DE
+        POP HL
+        OR A
+        EX AF,AF
+        OR A
+        JR Z,UNSIGD
+
+
+        LD A,L
+        NEG
+        LD L,A
+        LD A,H
+        CPL
+        LD H,A
+
+        LD A,E
+        NEG
+        LD E,A
+        LD A,D
+        CPL
+        LD D,A
+UNSIGD
+        EX AF,AF
+        RET
+DIVZERO SCF
+        RET
+
+;умножение без учета знака
+;UNSIGNED MULTIPLY HL=HL*A
+
+UMUL
+
+        OR A
+        JR NZ,NO_ZEU
+        LD L,A
+        LD H,A
+        RET
+NO_ZEU
+        PUSH AF
+        LD A,H
+        OR L
+        JR NZ,NO2ZEU
+        POP AF
+        RET
+
+
+NO2ZEU
+        POP AF
+        EX DE,HL
+        LD H,0
+        LD L,H
+        ADD A,A
+        JR NC,MUL1U
+        ADD HL,DE
+MUL1U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL2U
+        ADD HL,DE
+MUL2U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL3U
+        ADD HL,DE
+MUL3U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL4U
+        ADD HL,DE
+MUL4U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL5U
+        ADD HL,DE
+MUL5U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL6U
+        ADD HL,DE
+MUL6U   ADD HL,HL
+        ADD A,A
+        JR NC,MUL7U
+        ADD HL,DE
+MUL7U   ADD HL,HL
+        ADD A,A
+        JR NC,MEXITU
+        ADD HL,DE
+MEXITU
+
+        RET
+
+;модуль числа
+;A=ABS(HL)
+ABS
+        BIT 7,H
+        JR Z,POL1
+        XOR A
+        SUB L
+        LD L,A
+        LD H,0
+POL1    LD A,L
+        RET
+
+;модуль числа
+;HL=ABSHL(A)
+ABSHL
+        BIT 7,A
+        JR Z,POL1HL
+        CPL
+POL1HL  LD L,A
+        LD H,0
+        RET
+
+;увеличение на 1, с учетом знака
+
+INCSIGN
+        BIT 7,A
+        JR Z,INC_
+        DEC A
+        RET
+INC_    INC A
+        RET
+
+
+;квадратный корень
+;BC=X
+;DE=SQRT(X)
+
+SQRT
+        LD DE,0
+        EXX
+        LD BC,#4000
+        EXX
+
+LP1     LD HL,BC
+        PUSH BC
+        EXX
+        PUSH BC
+        EXX
+        POP BC
+        AND A
+        SBC HL,BC
+        POP BC
+        JR C,LP2
+        AND A
+        SBC HL,DE
+        JR C,LP2
+        LD BC,HL
+        SRL D
+        RR E
+        PUSH BC
+        EXX
+        PUSH BC
+        EXX
+        POP BC
+        LD A,B
+        OR D
+        LD D,A
+        LD A,C
+        OR E
+        LD E,A
+        POP BC
+        EXX
+        SRL B
+        RR C
+        SRL B
+        RR C
+        LD A,B
+        OR C
+        EXX
+        JR NZ,LP1
+        JP EXIT
+LP2
+        SRL D
+        RR E
+        EXX
+        SRL B
+        RR C
+        SRL B
+        RR C
+        LD A,B
+        OR C
+        EXX
+        JR NZ,LP1
+EXIT    RET
+
+
+
+   5. Создание текстуры для Fake Phong.
+
+   Теперь рассчитавши нормали этим скучным
+исходником,     вам    необходимо    будет
+произвести  рассчет  нормалей  к  вершинам
+полигонов  (это показано в пункте 3). Имея
+список    нормалей    к    каждой    точке
+треугольника,  а  точнее  к  каждой  точке
+3D-объекта, можна смело реализовывать Fake
+Phong.
+   Для  этого  нам нужно создать текстуру,
+которую  мы  будем накладывать  на объект.
+Она   будет  состоять  из  концентрических
+кругов, переходя от самого яркого  цвета к
+самому темному.
+</pre>
+<img src=dod2phng/pic1.gif>
+<pre>
+   В данном случае тектура размером 64x64,
+но   так   как   разрешение  "чанковского"
+экрана  64x48,  то  мы видим что верхняя и
+нижняя  часть тектуры обрезана, но речь не
+о этом.
+   Текстуру   будем   создавать  следующим
+образом:
+
+   for(y=0;y&lt;len_y;y++)
+   {
+       for(x=0;x&lt;len_x;x++)
+       {
+   texture[x][y]=max_color*sqrt(x*x+y*y);
+       }
+   }
+
+   len_x,  len_y  - это размер текстуры по
+координате X и Y.
+   max_color    -    максимальный   цвет в
+текстуре (для "чанков" он равен 16).
+   texture[][]   -   массив,   где   будет
+хранится текстура.
+
+   Хочу  заметить,  что  координаты  X и Y
+необходимо   изменять   от  отрицательного
+значения  к  положительному  (если  у  нас
+текстура  размером  64, то менять Y надо в
+таких пределах как Y=-31...32).
+
+   6. Fake Phong
+
+   Ну  а  теперь  можна смело приступать к
+реализации Фонга.
+   Для  этого  нужно на объект накладывать
+недавно     созданную     :)     текстуру.
+Координаты  в текстуре при векторе нормали
+считаются так:
+
+   U=n_x
+   V=n_y
+
+   где U,V - координаты в текстуре
+   n_x,n_y - координаты вектора нормали.
+
+   это   конечно  упрощенный  вариант,  но
+коректнее было бы так:
+
+   len=sqrt(n_x*n_x+n_y*n_y+n_z*n_z);
+   n_x/=len;
+   n_y/=len;
+   U=(n_x)*32;
+   V=(n_y)*32;
+
+   где  константа  32 - это длина текстуры
+(например по координате X), деленная на 2.
+   Но  это  слишком  тормозно и для нашего
+случая   и   не  надо,  так  как  еще  при
+"прекалькуляции"      мы      осуществляли
+нормирование вектора в заданых пределах.
+
+   7. Заключение
+
+   Если вам захотелось сделать environment
+mapping   (как  это  сделано  в  Refresh и
+5thElement),  то  вам  ничего  не остается
+сделать,     как     поменять     текстуру
+освещенности на какую-то картинку.
+   Доволно   таки   интерестный  результат
+(текстура   "обтянет"   объект,   например
+камень) можна наблюдать когда при вращении
+3D-объекта,  мы  будем  вращать и нормали.
+Только    лучше    всего    эти    нормали
+нормировать   при  вычислении  координат в
+текстуре.
+
+   Alexander Kulik (Wolf) 2:4635/8.18
+__________________________________________
+</pre>

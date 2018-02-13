@@ -1,0 +1,62 @@
+Из журнала ZX-Guide#1, Рязань, 28.11.1998
+(фрагмент раздела 'Этюды')
+
+
+
+ Alone Coder
+
+   Быстрая печать буквы 6x8 (экран в DE):
+     PUSH DE
+     LD L,A
+     LD B,C
+     LD A,2
+     RRCA
+     DJNZ $-1
+     LD (PRN+1),A
+     LD H,'FONT
+     LD B,8
+PRGO PUSH HL
+     LD L,(HL)
+PRN  LD H,1
+PR1  ADD HL,HL
+     ADD HL,HL
+     JR NC,PR1
+     LD A,(DE)
+     OR H
+     LD (DE),A
+     INC E
+     LD A,L
+     LD (DE),A
+     DEC E
+     INC D
+     POP HL
+     INC H
+     DJNZ PRGO
+     POP DE
+   Если шрифт упирается в 0, то уберите LD
+B,8,а DJNZ PRGO замените на JR NZ,PRGO.
+   Регистр C должен содержать 7,5,3 или 1,
+причем  7 соответствует нулевой координате
+буквы внутри знакоместа(x mod 8=0). Букв в
+шрифте 256,и все они прижаты к левому краю
+(можно сдвинутые на одну точку вправо).Как
+надо изменять C:
+     LD A,C
+     SUB 6
+     JR NC,$+5
+     INC E
+     AND 7
+     LD C,A
+ 
+   И,наконец,коснусь всем уже задолбавшего
+ZXревюшного вычисления адреса буквы в ПЗУ:
+      Было:             Стало:
+     LD L,A            LD L,A
+     LD H,0            ADD HL,HL
+     ADD HL,HL         LD H,15
+     ADD HL,HL         ADD HL,HL
+     ADD HL,HL         ADD HL,HL
+     LD BC,15360
+     ADD HL,BC
+   Убедились,что вам всю жизнь вешали лап-
+шу на уши?

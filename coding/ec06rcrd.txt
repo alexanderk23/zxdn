@@ -1,0 +1,603 @@
+Из газеты Echo #06, Брест, 07.2000
+
+
+
++----------------------------------------+
+|   Структура и организация RamDisk'а    |
+|          в Real Commander'е            |
++----------------------------------------+
+
+(C) Pawel/RS
+
+   Начиная с версии 1.8 в Real Commander'е
+появилась возможность работы с резидентным
+RamDisk'ом, эта  статья предназначена раз-
+работчикам  системного софта желающим сде-
+лать его поддержку в своих программах. Ram
+Disk в RC отличается от имеющегося станда-
+рта  по Honey Commander'у большей надежно-
+стью  (системная  дорожка хранится в самом
+последнем банке) и простотой использования
+(нет никаких таблиц банков в системном се-
+кторе).
+   Формат RamDisk'а ничем не отличается от
+обычного TR-DOS. В самом последнем доступ-
+ном  банке хранятся первые 4 дорожки, сле-
+дующие  4  дорожки  хранятся банком ниже и
+т.д.  Для определения наличия в памяти Ram
+Disk'а  проверяется  идентификационный код
+Tr-Dos  по  адресу #C0E7 последнего банка,
+если он равен 16, то RamDisk присутствует.
+После этого необходимо определить количес-
+тво используемых банков, для этого исполь-
+зуются  стандартная  информация  Tr-Dos  о
+дискете, по  адресу #C0E1  нужно прочитать
+два  байта  параметра первая свободная до-
+рожка/сектор. Параметр дорожка умножить на
+16 и сложить с параметром сектор. Получен-
+ный результат сложить с параметром свобод-
+но секторов по адресу #C0E5 и разделить на
+64, в результате получаем количество заня-
+тых  банков. Ниже приводится процедура для
+определения наличия RamDisk'a и количества
+используемых под него банков.
+
+
+TESTRD  LD      A,(PAGE) ;всего банков
+        CP      7
+        RET     C        ;выход если 128к
+        DEC     A
+        CALL    ONPAGE   ;выбор посл.банка
+        LD      A,(#C8E7)
+        CP      16
+        RET     NZ   ;выход если не найден
+        LD      HL,(#C8E1)
+        LD      DE,(#C8E5)
+        LD      A,H
+        LD      H,0
+        ADD     HL,DE
+        EX      DE,HL
+        CALL    RLENF9
+        LD      B,6
+        XOR     A
+TESTRD2 RR      H
+        RR      L
+        RRA
+        DJNZ    TESTRD2
+        AND     A
+        RET     NZ
+        LD      A,(PAGE)
+        SUB     L
+        LD      (RPAGE),A
+;в RPAGE записываем сколько доступно
+;банков с открытым RamDisk'ом
+        RET
+
+Умнож. A на 16 и прибавл. DE.
+RLENF9  RLCA:RLCA
+        RLCA:RLCA
+        LD      L,A
+        AND     15
+        LD      H,A
+        LD      A,L
+        AND     %11110000
+        LD      L,A
+        ADD     HL,DE
+        RET
+
+   Есть  конечно один нюанс, если в RC ог-
+раничить  используемую память 256кб и отк-
+рыть резидентный RamDisk, то вышеописанная
+процедурка  его не определит, поскольку он
+будет начинаться не с последнего банка па-
+мяти. В  большинстве  случаев  ограничение
+памяти  в RC нужно для аппаратных RamDisk'
+ов, пользователи  которых  вряд-ли  станут
+использовать программный.
+
+   Теперь  приведу  пример  как в дисковом
+драйвере организовать работу с RamDisk'ом.
+В  приведенном  примере используется упро-
+щенная  обработка ошибок #3D13 без запроса
+RIA (Retry, Abort, Ignore), в подобной си-
+туаци драйвер просто вернет код ошибки.
+
+TRDOS   DEC     C
+        JR      NZ,TRD0
+        PUSH    HL
+        CP      4
+        LD      HL,#3D13
+        JR      NZ,TRDS
+        PUSH    AF
+        LD      A,(PAGE)
+        LD      C,A
+        LD      A,(RPAGE)
+        CP      C
+        JR      Z,TRD1 ;ошибка
+                       ;RamDisk не открыт
+        POP     AF
+        LD      C,0
+        LD      HL,RW
+TRDS    LD      (ERR-2),HL
+        POP     HL
+TRD0    INC     C
+        PUSH    HL
+        LD      HL,0
+        LD      (23823),HL
+        LD      HL,(23613)
+        LD      (ERR+1),HL
+        LD      HL,ERR
+        EX      (SP),HL
+        LD      (23613),SP
+        EX      AF,AF'
+        XOR     A
+        LD      (23570),A
+        EX      AF,AF'
+        JP      15635
+ERR     LD      HL,0
+        LD      (23613),HL
+        LD      A,6
+        LD      (23570),A
+        LD      A,(23823)
+        AND     A
+        RET     Z
+TRD1    ;выдача сообщения об ошибке
+        RET
+
+
+   Теперь  при  выборе дисковода "E" через
+этот драйвер, вместо #3D13 будет подключе-
+на  процедура  RW,  обеспечивающая чтение/
+запись на RamDisk'е. Следует учесть, что в
+вашей  программе  должен храниться в TKARD
+номер текущего логического банка.
+
+
+;RAM DISK: чтение/запись сектора
+;HL-адрес, DE-дор/сек, C=5 чт,=6 зап.
+RW      DEC     C
+        JR      NZ,RW0A
+        LD      A,4
+        LD      (23798),A
+        RET
+RW0A    INC     C
+RW0     LD      (23796),DE
+        LD      A,B
+        AND     A
+        JR      Z,RW0C
+        PUSH    BC
+        PUSH    HL
+        CALL    RW0S
+        EX      DE,HL
+        POP     HL
+        POP     BC
+        AND     A
+        JR      NZ,RW0B
+        INC     H
+        DEC     B
+        JR      RW0
+RW0C    EI
+        RET
+RW0B    ;Выдача сообщения
+        ;"Дорожка не существует"
+        POP     HL
+        LD      A,20
+        RET
+
+RW0S    LD      A,C
+        PUSH    AF
+        LD      A,(PAGE)
+        DEC     A
+        LD      C,A
+        LD      A,D
+RW1     SUB     4
+        JR      C,RW2
+        DEC     C
+        LD      B,A
+        LD      A,(RPAGE)
+        DEC     A
+        CP      C
+        LD      A,B
+        JR      NZ,RW1
+        POP     AF
+        LD      A,20
+        RET
+RW2     ADD     A,4
+        RLCA:RLCA:RLCA:RLCA
+        ADD     A,E
+        ADD     A,#C0
+        LD      E,0
+        LD      D,A
+        POP     AF
+        CP      5
+        JP      Z,RDM
+        JP      WRM
+
+RW4     LD      HL,(23796)
+        INC     L
+        LD      A,L
+        CP      16
+        JR      NZ,RW5
+        INC     H
+        LD      L,0
+RW5     LD      (23796),HL
+        XOR     A
+        RET
+
+чтение из банка в C по адресу в DE, и
+запись в текущий банк по адресу в HL.
+RDM     PUSH    HL
+        PUSH    DE
+        LD      A,C
+        CALL    ONPAGE
+        POP     HL
+        LD      DE,RSCT
+        LD      BC,256
+        PUSH    DE
+        PUSH    BC
+        LDIR
+        LD      A,(TKARD)
+        CALL    ONPAGE
+        POP     BC
+        POP     HL
+        POP     DE
+        LDIR
+        JP      RW4
+
+чтение из текущего банка по адресу в HL
+и запись в банк C по адресу в DE.
+WRM     PUSH    DE
+        LD      A,C
+        LD      DE,RSCT
+        LD      BC,256
+        PUSH    DE
+        PUSH    BC
+        LDIR
+        CALL    ONPAGE
+        POP     BC
+        POP     HL
+        POP     DE
+        LDIR
+        LD      A,(TKARD)
+        CALL    ONPAGE
+        JP      RW4
+
+   Ну  и  для полного комплекта нам теперь
+нужен  только  драйвер памяти. Публикуемый
+ниже драйвер отличается от опубликованного
+в Echo 5 улучшенным  тестом памяти понима-
+ющем больше типов расширений. Для тестиро-
+вания  конфигурации  компьютера   вызовите
+подпрограмму START, она инициализирует пе-
+ренные TYPE (тип компьютера) и PAGE (коли-
+чество  доступных банков, первый банк - 0,
+последний TYPE-1). После тестирования кон-
+фигурации  все  что  находится после START
+можно  затирать. Теперь вышеописанной про-
+цедурой  TESTRD можно определить наличие в
+памяти  RamDisk'а. Для  проверки есть ли в
+системе  RamDisk  сравнивайте   переменные
+PAGE  и RPAGE, если они равны то RamDisk'а
+нет, иначе  RPAGE указывает на первый банк
+занятый под RamDisk, все банки ниже досту-
+пны для использования программой.
+
+
+выбор логического банка из регистра A
+ONPAGE  PUSH    BC
+        PUSH    HL
+        LD      C,A
+        LD      B,0
+        LD      HL,TABL_PG
+        ADD     HL,BC
+        LD      A,(HL)
+        POP     HL
+        POP     BC
+выбор физического банка из регистра A
+EX_RAM  DI
+        PUSH    HL
+        PUSH    AF
+        PUSH    BC
+        LD      HL,TYPE
+        BIT     1,(HL)
+        JR      NZ,ZS256
+        BIT     2,(HL)
+        JR      NZ,PROFI
+        BIT     3,(HL)
+        JR      NZ,TURBO_2
+        BIT     4,(HL)
+        JR      NZ,ATM1
+        BIT     0,(HL)
+        JR      NZ,SPECCY
+        BIT     7,(HL)
+        JR      NZ,SPECCY
+        JR      TDK
+
+TURBO_2 PUSH    AF
+        PUSH    IX
+        AND     #38
+        CPL
+        LD      BC,#FFF7
+        CALL    OUTC_A
+        POP     IX
+        POP     AF
+        JP      SPECCY
+
+ATM1    LD      BC,#FDFD
+        PUSH    AF
+        RRCA
+        RRCA
+        RRCA
+        AND     7
+        JR      HOME
+
+PROFI   LD      BC,#DFFD
+        PUSH    AF
+        RRCA
+        RRCA
+        RRCA
+        AND     7
+        JR      HOME
+
+ZS256   PUSH    AF
+        LD      B,A
+        AND     %00001000
+        RLCA
+        LD      C,A
+        LD      A,B
+        AND     %00110000
+        RLCA
+        RLCA
+        ADD     A,C
+        LD      BC,#1FFD
+HOME    OUT     (C),A
+        POP     AF
+
+SPECCY  LD      B,A
+        AND     24
+        RLCA
+        RLCA
+        RLCA
+        LD      C,A
+        LD      A,B
+        AND     7
+        ADD     A,C
+        OR      16
+        LD      BC,#7FFD
+        OUT     (C),A
+        NOP
+TDK     POP     BC
+        POP     AF
+        POP     HL
+        RET
+
+OUTC_A  LD      IX,10835
+        PUSH    IX
+        JP      15663
+
+
+;RSCT - временный 64 байтный буфер для
+;таблицы банков, также используется
+;драйвером RamDisk'а (256 байт).
+
+RSCT    EQU     23296
+
+LENTABL EQU     62 ;макс.колич.банков
+        DB      0
+TABL_PG DS      LENTABL+1
+
+TYPE    DB      0 ;тип компьютера
+PAGE    DB      0 ;всего доступных банков
+
+переменные RPAGE и TKARD зарезервированы
+для Ram Disk'а
+RPAGE   DB      0 ;всего доступных банков
+                  ;в системе с Ram Disk'ом
+TKARD   DB      0 ;Текущий банк
+
+
+START   CALL    TEST
+        LD      A,(8)
+        CP      #2A
+        JR      Z,START1
+        LD      C,8   ;на Scorpion'е уда-
+        CALL    DEBUG ;ляется 8-й банк
+инициализация переменной Ram Disk'а
+START1  LD      A,(PAGE)
+        LD      (RPAGE),A
+        RET
+
+тестирование конфигурации компьютера
+TEST    CALL    TABINIT
+        DI
+        LD      A,(#08)
+        CP      #C3
+        JR      NZ,ITURBO
+        LD      HL,TYPE
+        SET     7,(HL)
+ITURBO  LD      HL,(1111)
+        LD      BC,#FFF7
+        LD      A,%00011111
+        CALL    OUTC_A
+        LD      DE,(#C000+1111)
+        AND     A
+        SBC     HL,DE
+        LD      BC,#FFF7
+        LD      A,255
+        CALL    OUTC_A
+        JR      NZ,IDFFD
+        LD      HL,TYPE
+        SET     3,(HL)
+        JR      I7FFD
+MM_ATM  DB      #DB,#1F,#C9
+IDFFD   LD      DE,#0007
+        LD      BC,#DFFD
+        CALL    TSTB
+        JR      NZ,I1FFD
+        LD      HL,TYPE
+        SET     2,(HL)
+        JR      I7FFD
+I1FFD   LD      DE,#0010
+        LD      B,#1F
+        CALL    TSTB
+        JR      NZ,IFDFD
+        LD      HL,TYPE
+        SET     1,(HL)
+        JR      I7FFD
+IFDFD   LD      B,C
+        LD      D,#11
+        CALL    TSTB
+        JR      NZ,I7FFD
+        LD      HL,TYPE
+        SET     4,(HL)
+I7FFD   LD      B,#7F
+        CALL    TSTB
+        JR      NZ,SIZED
+        LD      HL,TYPE
+        SET     0,(HL)
+SIZED   CALL    VIRT
+        LD      A,(PAGE)
+        CP      8
+        JR      C,ENDING
+        LD      HL,TYPE
+        LD      A,(HL)
+        DEC     A
+        JR      NZ,ENDING
+        SET     5,(HL)
+ENDING  XOR     A
+        CALL    EX_RAM
+        EI
+        RET
+
+TSTB    LD      IX,#FFFF
+        OUT     (C),E
+        CALL    TSTB1
+        LD      L,(IX)
+        LD      (IX),E
+        OUT     (C),D
+        CALL    TSTB1
+        LD      H,(IX)
+        LD      (IX),D
+        OUT     (C),E
+        CALL    TSTB1
+        LD      A,(IX)
+        CP      E
+        LD      (IX),L
+        OUT     (C),D
+        PUSH    AF
+        CALL    TSTB1
+        POP     AF
+        LD      (IX),H
+        RET
+
+TSTB1   LD      A,B
+        CP      #7F
+        RET     Z
+        PUSH    BC
+        LD      B,#7F
+        LD      A,#10
+        OUT     (C),A
+        POP     BC
+        RET
+
+VIRT    LD      IX,#C000
+        LD      HL,RSCT+63
+        LD      B,64
+V_R11   LD      A,B
+        DEC     A
+        CALL    EX_RAM
+        LD      C,(IX+0)
+        LD      (HL),C
+        LD      (IX+0),A
+        DEC     HL
+        DJNZ    V_R11
+        PUSH    AF
+        LD      A,LENTABL-1
+        LD      (PAGE),A
+        POP     AF
+        LD      DE,TABL_PG
+V_R20   LD      A,(DE)
+        CP      #FF
+        JR      Z,V_R30
+        CALL    EX_RAM
+        CP      (IX+0)
+        JR      Z,V_R22
+        PUSH    DE
+        LD      HL,TABL_PG+LENTABL
+        AND     A
+        SBC     HL,DE
+        PUSH    HL
+        POP     BC
+        PUSH    DE
+        POP     HL
+        INC     HL
+        LDIR
+        PUSH    HL
+        LD      HL,PAGE
+        DEC     (HL)
+        POP     HL
+        POP     DE
+        DEC     DE
+V_R22   INC     DE
+        JR      V_R20
+V_R30   LD      B,64
+        LD      HL,RSCT
+V_R31   LD      A,64
+        SUB     B
+        CALL    EX_RAM
+        LD      A,(HL)
+        LD      (IX+0),A
+        INC     HL
+        DJNZ    V_R31
+        RET
+
+DEBUG   PUSH    DE
+        POP     HL
+NO_PG1  DEC     DE
+        LD      A,(DE)
+        CP      #FF
+        JR      Z,NO_PG2
+        CP      C
+        JR      NZ,NO_PG1
+        SBC     HL,DE
+        PUSH    HL
+        POP     BC
+        PUSH    DE
+        POP     HL
+        INC     HL
+        LDIR
+        PUSH    HL
+        LD      HL,PAGE
+        DEC     (HL)
+        POP     HL
+        DEC     HL
+        DEC     HL
+NO_PG2  EX      DE,HL
+        RET
+
+инициализациа таблицы банков, исключаются
+банки 2,5.
+TABINIT LD      HL,TABL_PG-1
+        LD      (HL),255
+        INC     HL
+        XOR     A
+TABI1   LD      (HL),A
+TABI2   INC     A
+        CP      2
+        JR      Z,TABI2
+        CP      5
+        JR      Z,TABI2
+        INC     HL
+        CP      LENTABL+1
+        JR      NZ,TABI1
+        LD      (HL),255
+        LD      HL,RSCT
+        PUSH    HL
+        POP     DE
+        INC     DE
+        LD      BC,63
+        LD      (HL),B
+        LDIR
+        INC     B
+        LD      (TYPE),BC
+        RET
